@@ -5,37 +5,38 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// 1. Data Model for Shops (Ready for Firebase in Phase 2)
 data class Shop(
     val id: String = "",
     val name: String = "",
@@ -57,7 +58,25 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// 2. Custom Theme enforcing Roboto (SansSerif) globally
+// Loads Bricolage Grotesque from res/font if present, with safe fallback so builds never fail
+@Composable
+fun rememberBricolageGrotesqueFont(): FontFamily {
+    val context = LocalContext.current
+    return remember {
+        val fontResId = context.resources.getIdentifier(
+            "bricolage_grotesque",
+            "font",
+            context.packageName
+        )
+        if (fontResId != 0) {
+            FontFamily(Font(fontResId, FontWeight.Bold))
+        } else {
+            FontFamily.SansSerif
+        }
+    }
+}
+
+// Global Roboto (SansSerif) Theme for the whole app
 @Composable
 fun SavarkundlaTheme(content: @Composable () -> Unit) {
     val robotoTypography = Typography(
@@ -70,8 +89,8 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = lightColorScheme(
             primary = Color(0xFF1E3A8A),     // Deep Royal Blue
-            secondary = Color(0xFFD97706),   // Warm Amber/Gold
-            background = Color(0xFFF8FAFC),
+            secondary = Color(0xFFD97706),   // Warm Amber
+            background = Color(0xFFF1F5F9),
             surface = Color.White
         ),
         typography = robotoTypography,
@@ -82,13 +101,15 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SavarkundlaApp() {
+    val bricolageFont = rememberBricolageGrotesqueFont()
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
-    var showRegisterDialog by remember { mutableStateOf(false) }
+    var showAddShopDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     val categories = listOf("All", "Electronics", "Clothing", "Grocery", "Hardware & Scales", "Medical", "Food")
 
-    // Sample Savarkundla Shops for Phase 1
     val sampleShops = remember {
         listOf(
             Shop(
@@ -136,49 +157,154 @@ fun SavarkundlaApp() {
 
     Scaffold(
         topBar = {
-            Surface(shadowElevation = 4.dp, color = Color.White) {
-                Row(
+            // HEADER: Contains Logo, Add Button, Search Bar, and Filter Button
+            Surface(
+                shadowElevation = 6.dp,
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    // LOGO: Georgia / Serif Font
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(
-                                style = SpanStyle(
-                                    fontFamily = FontFamily.Serif, // Maps to Georgia style
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 26.sp,
-                                    color = Color(0xFF1E3A8A)
-                                )
-                            ) {
-                                append("Savarkundla")
+                    // Header Row 1: Logo + Add Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Savarkundla.in Logo in Bricolage Grotesque
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontFamily = bricolageFont,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 26.sp,
+                                        letterSpacing = (-0.5).sp,
+                                        color = Color(0xFF1E3A8A)
+                                    )
+                                ) {
+                                    append("Savarkundla")
+                                }
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontFamily = bricolageFont,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 26.sp,
+                                        letterSpacing = (-0.5).sp,
+                                        color = Color(0xFFD97706)
+                                    )
+                                ) {
+                                    append(".in")
+                                }
                             }
-                            withStyle(
-                                style = SpanStyle(
-                                    fontFamily = FontFamily.Serif,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 26.sp,
-                                    color = Color(0xFFD97706)
-                                )
-                            ) {
-                                append(".in")
-                            }
-                        }
-                    )
+                        )
 
-                    TextButton(onClick = { showRegisterDialog = true }) {
-                        Icon(Icons.Default.Storefront, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("List Shop", fontWeight = FontWeight.Bold)
+                        // Upper Right Corner: Add Button
+                        Button(
+                            onClick = { showAddShopDialog = true },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF1E3A8A)
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add Shop",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Header Row 2: Search Bar (left) + Filter Button (right)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = {
+                                Text(
+                                    "Search anything to buy...",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = Color(0xFF1E3A8A)
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Clear",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedContainerColor = Color(0xFFF8FAFC),
+                                focusedBorderColor = Color(0xFF1E3A8A),
+                                unfocusedBorderColor = Color(0xFFCBD5E1)
+                            )
+                        )
+
+                        // Right side of Search Bar: Filter Button
+                        val isFiltered = selectedCategory != "All"
+                        OutlinedButton(
+                            onClick = { showFilterDialog = true },
+                            modifier = Modifier.height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isFiltered) Color(0xFFD97706) else Color(0xFFCBD5E1)
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (isFiltered) Color(0xFFFFFBEB) else Color(0xFFF8FAFC),
+                                contentColor = if (isFiltered) Color(0xFFD97706) else Color(0xFF1E3A8A)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.FilterList,
+                                contentDescription = "Filter",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isFiltered) selectedCategory else "Filter",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
         }
     ) { paddingValues ->
+        // SHOP CARDS START IMMEDIATELY BELOW THE HEADER
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -187,126 +313,97 @@ fun SavarkundlaApp() {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Search Bar ("Find anything you want to buy")
-            item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search products (e.g., Mobile, Saree, Scale)...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    )
-                )
-            }
-
-            // 2. Categories Row
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categories) { category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
-                            label = { Text(category) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
-                }
-            }
-
-            // 3. Shop Owner ₹2,000/month Banner
-            item {
-                MerchantPromoBanner(onJoinClick = { showRegisterDialog = true })
-            }
-
-            // 4. Shop Listings
             items(filteredShops) { shop ->
                 ShopCard(shop = shop)
             }
         }
     }
 
-    if (showRegisterDialog) {
+    // Filter Popup Dialog when clicking "Filter" button
+    if (showFilterDialog) {
         AlertDialog(
-            onDismissRequest = { showRegisterDialog = false },
-            title = { Text("Partner with Savarkundla.in", fontWeight = FontWeight.Bold) },
+            onDismissRequest = { showFilterDialog = false },
+            title = { Text("Filter by Category", fontWeight = FontWeight.Bold) },
             text = {
-                Text(
-                    "Grow your business across Savarkundla!\n\n" +
-                    "• Premium Verified Shop Profile\n" +
-                    "• Unlimited Product Keywords\n" +
-                    "• Direct Customer Calls & WhatsApp\n\n" +
-                    "Subscription: ₹2,000 / month"
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    categories.forEach { category ->
+                        val isSelected = selectedCategory == category
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) Color(0xFFEFF6FF) else Color.Transparent,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedCategory = category
+                                    showFilterDialog = false
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = category,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) Color(0xFF1E3A8A) else Color(0xFF1E293B)
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = Color(0xFF1E3A8A),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             },
             confirmButton = {
-                Button(onClick = { showRegisterDialog = false }) {
-                    Text("Contact Admin on WhatsApp")
+                TextButton(onClick = {
+                    selectedCategory = "All"
+                    showFilterDialog = false
+                }) {
+                    Text("Reset")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRegisterDialog = false }) {
+                TextButton(onClick = { showFilterDialog = false }) {
                     Text("Close")
                 }
             }
         )
     }
-}
 
-@Composable
-fun MerchantPromoBanner(onJoinClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF1E3A8A), Color(0xFF3B82F6))
-                )
-            )
-            .clickable { onJoinClick() }
-            .padding(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+    // Add Shop Popup Dialog when clicking "+ Add" button
+    if (showAddShopDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddShopDialog = false },
+            title = { Text("List Your Shop on Savarkundla.in", fontWeight = FontWeight.Bold) },
+            text = {
                 Text(
-                    text = "Own a Shop in Savarkundla?",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
+                    "Reach every customer in Savarkundla!\n\n" +
+                    "• Verified Shop Listing\n" +
+                    "• Unlimited Products in Search\n" +
+                    "• Direct Customer Call & WhatsApp\n\n" +
+                    "Membership Plan: ₹2,000 / month"
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Get listed so customers find your products instantly. Just ₹2,000/month.",
-                    color = Color(0xFFE2E8F0),
-                    fontSize = 13.sp
-                )
+            },
+            confirmButton = {
+                Button(onClick = { showAddShopDialog = false }) {
+                    Text("Join via WhatsApp")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddShopDialog = false }) {
+                    Text("Close")
+                }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Surface(
-                color = Color(0xFFD97706),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text(
-                    text = "Join Now",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                )
-            }
-        }
+        )
     }
 }
 
@@ -347,14 +444,23 @@ fun ShopCard(shop: Shop) {
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Verified Partner", fontSize = 12.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Medium)
+                        Text(
+                            "Verified Partner",
+                            fontSize = 12.sp,
+                            color = Color(0xFF16A34A),
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(text = shop.name, style = MaterialTheme.typography.titleMedium, color = Color(0xFF0F172A))
+            Text(
+                text = shop.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF0F172A)
+            )
 
             Spacer(modifier = Modifier.height(6.dp))
 
