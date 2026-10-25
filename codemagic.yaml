@@ -1,3 +1,4 @@
+# Why we use this: Automates building the Android APK on Codemagic servers.
 workflows:
   android-phase1-build:
     name: Savarkundla.in Android Build
@@ -6,9 +7,23 @@ workflows:
     environment:
       java: 17
     scripts:
+      # Why we use this: Tells Gradle where the Android SDK is installed.
       - name: Set Android SDK location
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+
+      # Why we use this: Downloads real Bricolage Grotesque & Roboto .ttf files into res/font.
+      - name: Download Bricolage Grotesque and Roboto Fonts
+        script: |
+          mkdir -p app/src/main/res/font
+          BG_URL=$(curl -s "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700" | grep -oE "https://fonts.gstatic.com/[^)]+\.ttf" | head -n 1)
+          curl -fL "$BG_URL" -o app/src/main/res/font/bricolage_grotesque.ttf
+          R_REG_URL=$(curl -s "https://fonts.googleapis.com/css2?family=Roboto:wght@400" | grep -oE "https://fonts.gstatic.com/[^)]+\.ttf" | head -n 1)
+          curl -fL "$R_REG_URL" -o app/src/main/res/font/roboto_regular.ttf
+          R_BOLD_URL=$(curl -s "https://fonts.googleapis.com/css2?family=Roboto:wght@700" | grep -oE "https://fonts.gstatic.com/[^)]+\.ttf" | head -n 1)
+          curl -fL "$R_BOLD_URL" -o app/src/main/res/font/roboto_bold.ttf
+
+      # Why we use this: Compiles your Kotlin code and generates the APK file.
       - name: Build Debug APK
         script: |
           gradle assembleDebug --stacktrace
