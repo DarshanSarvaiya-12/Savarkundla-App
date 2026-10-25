@@ -1,9 +1,18 @@
+// ============================================================================
+// WHY WE USE THIS SECTION: GRADLE PLUGINS
+// Tells Gradle to build an Android App using Kotlin and Jetpack Compose UI.
+// ============================================================================
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// ============================================================================
+// WHY WE USE THIS SECTION: ANDROID APP SETTINGS
+// Sets your unique app ID (in.savarkundla.app), minimum supported Android
+// version (Android 7.0+), and Java 17 compatibility for Codemagic.
+// ============================================================================
 android {
     namespace = "in.savarkundla.app"
     compileSdk = 35
@@ -30,6 +39,11 @@ android {
     }
 }
 
+// ============================================================================
+// WHY WE USE THIS SECTION: EXTERNAL LIBRARIES (DEPENDENCIES)
+// Downloads Material 3 UI components, extended icons (WhatsApp/Filter/Star),
+// and Coil (coil-compose) so Shop Cards can load shop photos from the web.
+// ============================================================================
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
     implementation(composeBom)
