@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
@@ -42,7 +41,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -75,7 +73,7 @@ data class Shop(
     val phone: String = ""
 )
 
-// Why we use this: Hides the default title bar and starts the app UI.
+// Why we use this: Hides the default system title bar and starts the app UI.
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -119,7 +117,7 @@ fun rememberRobotoFont(): FontFamily {
     }
 }
 
-// Why we use this: Creates an animated moving RGB brush for the Search bar and Mic border.
+// Why we use this: Creates an animated moving RGB border brush for Search and Mic buttons.
 @Composable
 fun rememberMovingRgbBrush(): Brush {
     val infiniteTransition = rememberInfiniteTransition(label = "rgbBorder")
@@ -175,7 +173,7 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
         colorScheme = lightColorScheme(
             primary = Color(0xFF1E3A8A),
             secondary = Color(0xFFFF6B00),
-            background = Color(0xFFF8FAFC),
+            background = Color.White,
             surface = Color.White
         ),
         typography = robotoTypography
@@ -186,7 +184,7 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
     }
 }
 
-// Why we use this: Controls the header, voice search, blue shadow tagline, and shop cards.
+// Why we use this: Controls the header, orange-to-white background, tagline, and shop list.
 @Composable
 fun SavarkundlaApp() {
     val bricolageFont = rememberBricolageFont()
@@ -263,7 +261,7 @@ fun SavarkundlaApp() {
         )
     }
 
-    // Why we use this: Filters shops based on search bar text and selected category.
+    // Why we use this: Filters shops based on search query and selected category.
     val filteredShops = sampleShops.filter { shop ->
         val matchesCategory = selectedCategory == "All" || shop.shopType == selectedCategory
         val matchesSearch = shop.name.contains(searchQuery, ignoreCase = true) ||
@@ -273,240 +271,234 @@ fun SavarkundlaApp() {
         matchesCategory && matchesSearch
     }
 
+    // Why we use this: Mixes soft orange and white from top to bottom across the whole screen.
+    val appBackgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFFFCC99),
+            Color(0xFFFFE5CC),
+            Color(0xFFFFF5EB),
+            Color(0xFFFFFFFF)
+        )
+    )
+
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            // Why we use this: Holds the white header and spreads a blue shadow downward.
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Surface(
-                    color = Color.White,
+            // Why we use this: Clean header without any blue shadow.
+            Surface(
+                color = Color.White.copy(alpha = 0.94f),
+                shadowElevation = 0.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(
-                            elevation = 12.dp,
-                            spotColor = Color(0xFF2563EB),
-                            ambientColor = Color(0xFF2563EB)
-                        )
+                        .statusBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    // Why we use this: Row 1 with Logo on left and text-only Filter button on upper-right.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Why we use this: Top header row with Bricolage Grotesque logo and '+' button.
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontFamily = bricolageFont,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 24.sp,
+                                        letterSpacing = (-0.5).sp,
+                                        color = Color(0xFF1E3A8A)
+                                    )
+                                ) {
+                                    append("Savarkundla")
+                                }
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontFamily = bricolageFont,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 24.sp,
+                                        letterSpacing = (-0.5).sp,
+                                        color = Color(0xFFFF6B00)
+                                    )
+                                ) {
+                                    append(".in")
+                                }
+                            }
+                        )
+
+                        // Why we use this: Text-only Filter button in the upper-right corner.
+                        val isFiltered = selectedCategory != "All"
+                        OutlinedButton(
+                            onClick = { showFilterDialog = true },
+                            modifier = Modifier.height(35.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isFiltered) Color(0xFFFF6B00) else Color(0xFFCBD5E1)
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (isFiltered) Color(0xFFFFF7ED) else Color(0xFFF8FAFC),
+                                contentColor = if (isFiltered) Color(0xFFFF6B00) else Color(0xFF1E3A8A)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
                         ) {
                             Text(
-                                text = buildAnnotatedString {
-                                    withStyle(
-                                        style = SpanStyle(
-                                            fontFamily = bricolageFont,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 26.sp,
-                                            letterSpacing = (-0.5).sp,
-                                            color = Color(0xFF1E3A8A)
-                                        )
-                                    ) {
-                                        append("Savarkundla")
-                                    }
-                                    withStyle(
-                                        style = SpanStyle(
-                                            fontFamily = bricolageFont,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 26.sp,
-                                            letterSpacing = (-0.5).sp,
-                                            color = Color(0xFFFF6B00)
-                                        )
-                                    ) {
-                                        append(".in")
-                                    }
-                                }
+                                text = if (isFiltered) selectedCategory else "Filter",
+                                fontFamily = robotoFont,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
                             )
-
-                            // Why we use this: Bold '+' icon button in the upper-right corner.
-                            Surface(
-                                onClick = { showAddShopDialog = true },
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFF1E3A8A),
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Add Shop",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Why we use this: Row with 37dp Search bar, Mic button, and Filter button.
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Why we use this: Slightly shorter 37dp Search bar with thin moving RGB border.
-                            BasicTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                singleLine = true,
-                                textStyle = TextStyle(
-                                    fontFamily = robotoFont,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF0F172A)
-                                ),
-                                cursorBrush = SolidColor(Color(0xFF1E3A8A)),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(37.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFF8FAFC))
-                                    .border(1.2.dp, rgbBrush, RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 10.dp),
-                                decorationBox = { innerTextField ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Search,
-                                            contentDescription = "Search",
-                                            tint = Color(0xFF64748B),
-                                            modifier = Modifier.size(17.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Box(modifier = Modifier.weight(1f)) {
-                                            if (searchQuery.isEmpty()) {
-                                                Text(
-                                                    text = "Ask Anything",
-                                                    fontFamily = robotoFont,
-                                                    fontSize = 13.sp,
-                                                    color = Color(0xFF94A3B8)
-                                                )
-                                            }
-                                            innerTextField()
-                                        }
-                                        if (searchQuery.isNotEmpty()) {
-                                            Icon(
-                                                Icons.Default.Close,
-                                                contentDescription = "Clear",
-                                                tint = Color(0xFF64748B),
-                                                modifier = Modifier
-                                                    .size(16.dp)
-                                                    .clickable { searchQuery = "" }
-                                            )
-                                        }
-                                    }
-                                }
-                            )
-
-                            // Why we use this: Mic button between Search and Filter with thin moving RGB border.
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(37.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFF8FAFC))
-                                    .border(1.2.dp, rgbBrush, RoundedCornerShape(10.dp))
-                                    .clickable {
-                                        try {
-                                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                                putExtra(
-                                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                                )
-                                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Ask Anything...")
-                                            }
-                                            voiceLauncher.launch(intent)
-                                        } catch (_: Exception) {
-                                        }
-                                    }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Mic,
-                                    contentDescription = "Voice Search",
-                                    tint = Color(0xFF1E3A8A),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            // Why we use this: 37dp Filter button on the right side of the Mic button.
-                            val isFiltered = selectedCategory != "All"
-                            OutlinedButton(
-                                onClick = { showFilterDialog = true },
-                                modifier = Modifier.height(37.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                border = BorderStroke(
-                                    1.dp,
-                                    if (isFiltered) Color(0xFFFF6B00) else Color(0xFFCBD5E1)
-                                ),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (isFiltered) Color(0xFFFFF7ED) else Color(0xFFF8FAFC),
-                                    contentColor = if (isFiltered) Color(0xFFFF6B00) else Color(0xFF1E3A8A)
-                                ),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.FilterList,
-                                    contentDescription = "Filter",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (isFiltered) selectedCategory else "Filter",
-                                    fontFamily = robotoFont,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 12.sp
-                                )
-                            }
                         }
                     }
-                }
 
-                // Why we use this: Spreads a blue shadow downward behind the Bricolage Grotesque text line.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF2563EB).copy(alpha = 0.28f),
-                                    Color(0xFF3B82F6).copy(alpha = 0.10f),
-                                    Color.Transparent
-                                )
-                            )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Why we use this: Row 2 with Search Bar, Mic button, and blue-bordered '+' button.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Why we use this: 37dp Search bar with moving RGB border and "Ask Anything".
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                fontFamily = robotoFont,
+                                fontSize = 13.sp,
+                                color = Color(0xFF0F172A)
+                            ),
+                            cursorBrush = SolidColor(Color(0xFF1E3A8A)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(37.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White)
+                                .border(1.2.dp, rgbBrush, RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp),
+                            decorationBox = { innerTextField ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = "Search",
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        if (searchQuery.isEmpty()) {
+                                            Text(
+                                                text = "Ask Anything",
+                                                fontFamily = robotoFont,
+                                                fontSize = 13.sp,
+                                                color = Color(0xFF94A3B8)
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                    if (searchQuery.isNotEmpty()) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Clear",
+                                            tint = Color(0xFF64748B),
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clickable { searchQuery = "" }
+                                        )
+                                    }
+                                }
+                            }
                         )
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = "Find what you want to Buy - Amreli",
-                        fontFamily = bricolageFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = Color(0xFF1E3A8A)
-                    )
+
+                        // Why we use this: Mic icon button with moving RGB border.
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(37.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White)
+                                .border(1.2.dp, rgbBrush, RoundedCornerShape(10.dp))
+                                .clickable {
+                                    try {
+                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(
+                                                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                            )
+                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Ask Anything...")
+                                        }
+                                        voiceLauncher.launch(intent)
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Voice Search",
+                                tint = Color(0xFF1E3A8A),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        // Why we use this: '+' button on right of Mic with blue border and blue '+' symbol.
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(37.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White)
+                                .border(1.4.dp, Color(0xFF1E3A8A), RoundedCornerShape(10.dp))
+                                .clickable { showAddShopDialog = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Shop",
+                                tint = Color(0xFF1E3A8A),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
     ) { paddingValues ->
-        // Why we use this: Scrollable list of Shop Cards starting right below the tagline.
-        LazyColumn(
+        // Why we use this: Applies the orange-to-white vertical background across the body.
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(appBackgroundBrush)
+                .padding(paddingValues)
         ) {
-            items(filteredShops) { shop ->
-                ShopCard(shop = shop, robotoFont = robotoFont)
+            // Why we use this: Tagline between Header and Shop Cards in same 24.sp font size as Logo.
+            Text(
+                text = "Find what you want to Buy - Amreli",
+                fontFamily = bricolageFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                lineHeight = 28.sp,
+                letterSpacing = (-0.5).sp,
+                color = Color(0xFF1E3A8A),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 12.dp)
+            )
+
+            // Why we use this: 10.dp horizontal padding makes Shop Cards slightly wider.
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(filteredShops) { shop ->
+                    ShopCard(shop = shop, robotoFont = robotoFont)
+                }
             }
         }
     }
@@ -601,7 +593,7 @@ fun SavarkundlaApp() {
     }
 }
 
-// Why we use this: Shop Card with thin black border, slightly shorter image, and action buttons.
+// Why we use this: Wider Shop Card with thin light-black border, shop image, and buttons.
 @Composable
 fun ShopCard(shop: Shop, robotoFont: FontFamily) {
     val context = LocalContext.current
@@ -609,12 +601,13 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(0.6.dp, Color.Black),
+        // Why we use this: Thin light-black border around every Shop Card.
+        border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Why we use this: aspectRatio(1.25f) makes the image height slightly shorter than 1:1.
+            // Why we use this: Displays the shop photo with a slightly shorter height than 1:1.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -628,7 +621,7 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Why we use this: Shows the Shop Type badge on the top-left of the image.
+                // Why we use this: Shows the Shop Type badge on the top-left of the photo.
                 Surface(
                     color = Color(0xFF0F172A).copy(alpha = 0.82f),
                     shape = RoundedCornerShape(8.dp),
