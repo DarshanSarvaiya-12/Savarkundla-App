@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Why we use this: Allows the app to load shop images from the internet. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Why we use this: NoActionBar removes the extra Savarkundla.in bar at the very top. -->
     <application
         android:allowBackup="true"
         android:label="Savarkundla.in"
-        android:supportsRtl="true">
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
             android:exported="true">
