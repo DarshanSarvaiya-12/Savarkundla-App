@@ -1,5 +1,11 @@
 package `in`.savarkundla.app
 
+// ============================================================================
+// WHY WE USE THIS SECTION: IMPORTS
+// Brings in Android system tools (Phone Call, Browser/WhatsApp links),
+// Jetpack Compose UI components (Rows, Columns, Cards, Buttons, Text),
+// Material 3 icons, and the Coil library (AsyncImage) to load shop photos.
+// ============================================================================
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -45,6 +51,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
+// ============================================================================
+// WHY WE USE THIS SECTION: SHOP DATA MODEL
+// Defines the blueprint for every shop in Savarkundla. Having default values
+// (like = "") makes this class 100% ready for Firebase Firestore in Phase 2.
+// ============================================================================
 data class Shop(
     val id: String = "",
     val name: String = "",
@@ -57,6 +68,11 @@ data class Shop(
     val phone: String = ""
 )
 
+// ============================================================================
+// WHY WE USE THIS SECTION: MAIN ACTIVITY ENTRY POINT
+// This is the starting screen launched by Android when a user taps the
+// Savarkundla.in app icon on their phone. It loads our custom theme and UI.
+// ============================================================================
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,29 +84,42 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Loads Bricolage Grotesque for the Savarkundla.in Logo
+// ============================================================================
+// WHY WE USE THIS SECTION: BRICOLAGE GROTESQUE LOGO FONT LOADER
+// Checks if Codemagic downloaded the custom "bricolage_grotesque.ttf" font
+// into res/font. If found, it applies it to the Savarkundla.in logo; if not,
+// it safely falls back to SansSerif so the app never crashes.
+// ============================================================================
 @Composable
 fun rememberBricolageGrotesqueFont(): FontFamily {
     val context = LocalContext.current
     return remember {
-        val fontResId = context.resources.getIdentifier(
-            "bricolage_grotesque",
-            "font",
-            context.packageName
-        )
-        if (fontResId != 0) {
-            FontFamily(Font(fontResId, FontWeight.Bold))
-        } else {
+        try {
+            val fontResId = context.resources.getIdentifier(
+                "bricolage_grotesque",
+                "font",
+                context.packageName
+            )
+            if (fontResId != 0) {
+                FontFamily(Font(fontResId, FontWeight.Bold))
+            } else {
+                FontFamily.SansSerif
+            }
+        } catch (e: Exception) {
             FontFamily.SansSerif
         }
     }
 }
 
-// Forces Roboto (FontFamily.SansSerif) as the default font across the entire app
+// ============================================================================
+// WHY WE USE THIS SECTION: GLOBAL ROBOTO THEME & BRAND COLORS
+// Sets Roboto (FontFamily.SansSerif on Android) as the default font for every
+// heading, body text, and button across the entire app, along with brand colors.
+// ============================================================================
 @Composable
 fun SavarkundlaTheme(content: @Composable () -> Unit) {
     val defaultTypo = Typography()
-    val roboto font = FontFamily.SansSerif
+    val robotoFont = FontFamily.SansSerif // Fixed variable name (no space)
 
     val robotoTypography = Typography(
         displayLarge = defaultTypo.displayLarge.copy(fontFamily = robotoFont),
@@ -112,9 +141,9 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
 
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary = Color(0xFF1E3A8A),
-            secondary = Color(0xFFD97706),
-            background = Color(0xFFF1F5F9),
+            primary = Color(0xFF1E3A8A),     // Deep Royal Blue
+            secondary = Color(0xFFD97706),   // Warm Amber/Gold
+            background = Color(0xFFF1F5F9),  // Light Modern Gray-Blue Background
             surface = Color.White
         ),
         typography = robotoTypography,
@@ -122,6 +151,11 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
     )
 }
 
+// ============================================================================
+// WHY WE USE THIS SECTION: MAIN SCREEN STATE & DATA FILTERING
+// Holds the user's current search text, selected category filter, popup dialog
+// states, and sample shop listings, then filters the shops in real time.
+// ============================================================================
 @Composable
 fun SavarkundlaApp() {
     val bricolageFont = rememberBricolageGrotesqueFont()
@@ -182,6 +216,7 @@ fun SavarkundlaApp() {
         )
     }
 
+    // Filters the shop list whenever the user types in Search or picks a Category
     val filteredShops = sampleShops.filter { shop ->
         val matchesCategory = selectedCategory == "All" || shop.shopType == selectedCategory
         val matchesSearch = shop.name.contains(searchQuery, ignoreCase = true) ||
@@ -191,9 +226,13 @@ fun SavarkundlaApp() {
         matchesCategory && matchesSearch
     }
 
+    // ========================================================================
+    // WHY WE USE THIS SECTION: TOP HEADER BAR
+    // Keeps the Savarkundla.in Logo, "+ Add" button, compact 42dp Search Bar,
+    // and 42dp Filter button pinned inside a clean white header at the top.
+    // ========================================================================
     Scaffold(
         topBar = {
-            // HEADER: Logo, Add Button, Compact Search Bar, and Filter Button
             Surface(
                 shadowElevation = 4.dp,
                 color = Color.White,
@@ -205,7 +244,7 @@ fun SavarkundlaApp() {
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    // Header Row 1: Logo + Add Button
+                    // Header Row 1: Bricolage Grotesque Logo (Left) + Add Button (Right)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -259,13 +298,13 @@ fun SavarkundlaApp() {
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Header Row 2: Compact 42dp Search Bar + 42dp Filter Button
+                    // Header Row 2: Slightly Decreased Height (42dp) Search Bar + Filter Button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Sleek 42dp Search Bar
+                        // Custom 42dp Search Bar using BasicTextField so text is never cut off
                         BasicTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
@@ -319,7 +358,7 @@ fun SavarkundlaApp() {
                             }
                         )
 
-                        // Sleek 42dp Filter Button
+                        // 42dp Filter Button next to Search Bar
                         val isFiltered = selectedCategory != "All"
                         OutlinedButton(
                             onClick = { showFilterDialog = true },
@@ -352,7 +391,11 @@ fun SavarkundlaApp() {
             }
         }
     ) { paddingValues ->
-        // SHOP CARDS LIST BELOW HEADER
+        // ====================================================================
+        // WHY WE USE THIS SECTION: SCROLLABLE SHOP CARDS LIST
+        // LazyColumn renders only the cards visible on screen for smooth 60fps
+        // scrolling even when Savarkundla.in has hundreds of listed shops.
+        // ====================================================================
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -367,7 +410,11 @@ fun SavarkundlaApp() {
         }
     }
 
-    // Category Filter Dialog
+    // ========================================================================
+    // WHY WE USE THIS SECTION: POPUP DIALOGS (FILTER & ₹2,000/MO ADD SHOP)
+    // Displays category selection when "Filter" is clicked, and your ₹2,000/mo
+    // merchant subscription pitch when "+ Add" is clicked.
+    // ========================================================================
     if (showFilterDialog) {
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
@@ -427,7 +474,6 @@ fun SavarkundlaApp() {
         )
     }
 
-    // Add Shop Dialog (₹2,000/month)
     if (showAddShopDialog) {
         AlertDialog(
             onDismissRequest = { showAddShopDialog = false },
@@ -455,6 +501,11 @@ fun SavarkundlaApp() {
     }
 }
 
+// ============================================================================
+// WHY WE USE THIS SECTION: MODERN SHOP CARD UI COMPONENT
+// Displays each shop's photo, floating Shop Type badge, Star rating & review
+// count, Shop Name, Short Address, and 1-tap Call & WhatsApp buttons.
+// ============================================================================
 @Composable
 fun ShopCard(shop: Shop) {
     val context = LocalContext.current
@@ -466,7 +517,7 @@ fun ShopCard(shop: Shop) {
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. Shop Image with Floating Shop Type Badge
+            // 1. Top Banner Image + Shop Type Badge + Review Count Pill
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -480,7 +531,7 @@ fun ShopCard(shop: Shop) {
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Shop Type Badge (Top-Left over Image)
+                // Floating Shop Type Badge (Top-Left)
                 Surface(
                     color = Color(0xFF0F172A).copy(alpha = 0.82f),
                     shape = RoundedCornerShape(8.dp),
@@ -497,7 +548,7 @@ fun ShopCard(shop: Shop) {
                     )
                 }
 
-                // Reviews Pill (Bottom-Right over Image)
+                // Floating Rating & Number of Reviews Badge (Bottom-Right)
                 Surface(
                     color = Color.White.copy(alpha = 0.95f),
                     shape = RoundedCornerShape(8.dp),
@@ -533,9 +584,8 @@ fun ShopCard(shop: Shop) {
                 }
             }
 
-            // 2. Shop Info Section
+            // 2. Shop Name, Short Address, and Action Buttons
             Column(modifier = Modifier.padding(16.dp)) {
-                // Shop Name
                 Text(
                     text = shop.name,
                     fontSize = 18.sp,
@@ -547,7 +597,6 @@ fun ShopCard(shop: Shop) {
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Short Shop Address
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.LocationOn,
@@ -567,12 +616,12 @@ fun ShopCard(shop: Shop) {
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 3. Call & WhatsApp Action Buttons
+                // 3. Call & WhatsApp Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Call Button
+                    // Launches the Android Phone Dialer with the shop's number
                     Button(
                         onClick = {
                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${shop.phone}"))
@@ -596,7 +645,7 @@ fun ShopCard(shop: Shop) {
                         Text("Call", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
 
-                    // WhatsApp Button
+                    // Launches a pre-filled WhatsApp chat with the shop owner
                     Button(
                         onClick = {
                             val url = "https://api.whatsapp.com/send?phone=91${shop.phone}&text=Hi%20${shop.name},%20I%20found%20your%20shop%20on%20Savarkundla.in!"
