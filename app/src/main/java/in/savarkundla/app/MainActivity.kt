@@ -28,14 +28,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,6 +52,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -173,7 +172,7 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
         colorScheme = lightColorScheme(
             primary = Color(0xFF1E3A8A),
             secondary = Color(0xFFFF6B00),
-            background = Color.White,
+            background = Color(0xFFEBF5FF),
             surface = Color.White
         ),
         typography = robotoTypography
@@ -184,7 +183,7 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
     }
 }
 
-// Why we use this: Controls the header, orange-to-white background, tagline, and shop list.
+// Why we use this: Controls the header, scrollable tagline, shop cards, and blue footer.
 @Composable
 fun SavarkundlaApp() {
     val bricolageFont = rememberBricolageFont()
@@ -271,23 +270,16 @@ fun SavarkundlaApp() {
         matchesCategory && matchesSearch
     }
 
-    // Why we use this: Mixes soft orange and white from top to bottom across the whole screen.
-    val appBackgroundBrush = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFFFCC99),
-            Color(0xFFFFE5CC),
-            Color(0xFFFFF5EB),
-            Color(0xFFFFFFFF)
-        )
-    )
+    // Why we use this: Light white sky-blue color for the app background.
+    val skyBlueWhiteBg = Color(0xFFEBF5FF)
 
     Scaffold(
-        containerColor = Color.Transparent,
+        containerColor = skyBlueWhiteBg,
         topBar = {
-            // Why we use this: Clean header without any blue shadow.
+            // Why we use this: Clean top header holding Logo, Filter, Search, Mic, and '+' buttons.
             Surface(
-                color = Color.White.copy(alpha = 0.94f),
-                shadowElevation = 0.dp,
+                color = Color.White,
+                shadowElevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -296,7 +288,7 @@ fun SavarkundlaApp() {
                         .statusBarsPadding()
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
-                    // Why we use this: Row 1 with Logo on left and text-only Filter button on upper-right.
+                    // Why we use this: Row 1 with 26.sp Logo on left and Filter button on upper-right.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -308,7 +300,7 @@ fun SavarkundlaApp() {
                                     style = SpanStyle(
                                         fontFamily = bricolageFont,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 24.sp,
+                                        fontSize = 26.sp,
                                         letterSpacing = (-0.5).sp,
                                         color = Color(0xFF1E3A8A)
                                     )
@@ -319,7 +311,7 @@ fun SavarkundlaApp() {
                                     style = SpanStyle(
                                         fontFamily = bricolageFont,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 24.sp,
+                                        fontSize = 26.sp,
                                         letterSpacing = (-0.5).sp,
                                         color = Color(0xFFFF6B00)
                                     )
@@ -329,53 +321,50 @@ fun SavarkundlaApp() {
                             }
                         )
 
-                        // Why we use this: Text-only Filter button in the upper-right corner.
-                        val isFiltered = selectedCategory != "All"
-                        OutlinedButton(
-                            onClick = { showFilterDialog = true },
-                            modifier = Modifier.height(35.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isFiltered) Color(0xFFFF6B00) else Color(0xFFCBD5E1)
-                            ),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (isFiltered) Color(0xFFFFF7ED) else Color(0xFFF8FAFC),
-                                contentColor = if (isFiltered) Color(0xFFFF6B00) else Color(0xFF1E3A8A)
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                        // Why we use this: Filter button with same 42.dp width and blue border as '+' button.
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .width(42.dp)
+                                .height(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White)
+                                .border(1.4.dp, Color(0xFF1E3A8A), RoundedCornerShape(10.dp))
+                                .clickable { showFilterDialog = true }
                         ) {
                             Text(
-                                text = if (isFiltered) selectedCategory else "Filter",
+                                text = "Filter",
                                 fontFamily = robotoFont,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = Color(0xFF1E3A8A),
+                                maxLines = 1
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Why we use this: Row 2 with Search Bar, Mic button, and blue-bordered '+' button.
+                    // Why we use this: Row 2 with 40.dp Search bar, Mic button, and '+' button.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Why we use this: 37dp Search bar with moving RGB border and "Ask Anything".
+                        // Why we use this: 40.dp Search bar with moving RGB border and "Ask Anything".
                         BasicTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
                             singleLine = true,
                             textStyle = TextStyle(
                                 fontFamily = robotoFont,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color(0xFF0F172A)
                             ),
                             cursorBrush = SolidColor(Color(0xFF1E3A8A)),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(37.dp)
+                                .height(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color.White)
                                 .border(1.2.dp, rgbBrush, RoundedCornerShape(10.dp))
@@ -389,7 +378,7 @@ fun SavarkundlaApp() {
                                         Icons.Default.Search,
                                         contentDescription = "Search",
                                         tint = Color(0xFF64748B),
-                                        modifier = Modifier.size(17.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Box(modifier = Modifier.weight(1f)) {
@@ -417,11 +406,12 @@ fun SavarkundlaApp() {
                             }
                         )
 
-                        // Why we use this: Mic icon button with moving RGB border.
+                        // Why we use this: 42x40.dp Mic button with moving RGB border.
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(37.dp)
+                                .width(42.dp)
+                                .height(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color.White)
                                 .border(1.2.dp, rgbBrush, RoundedCornerShape(10.dp))
@@ -443,15 +433,16 @@ fun SavarkundlaApp() {
                                 imageVector = Icons.Default.Mic,
                                 contentDescription = "Voice Search",
                                 tint = Color(0xFF1E3A8A),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                         }
 
-                        // Why we use this: '+' button on right of Mic with blue border and blue '+' symbol.
+                        // Why we use this: 42x40.dp '+' button with blue border and blue '+' symbol.
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(37.dp)
+                                .width(42.dp)
+                                .height(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color.White)
                                 .border(1.4.dp, Color(0xFF1E3A8A), RoundedCornerShape(10.dp))
@@ -461,7 +452,7 @@ fun SavarkundlaApp() {
                                 imageVector = Icons.Default.Add,
                                 contentDescription = "Add Shop",
                                 tint = Color(0xFF1E3A8A),
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(23.dp)
                             )
                         }
                     }
@@ -469,35 +460,56 @@ fun SavarkundlaApp() {
             }
         }
     ) { paddingValues ->
-        // Why we use this: Applies the orange-to-white vertical background across the body.
-        Column(
+        // Why we use this: Scrolls the Tagline, Shop Cards, and Footer together on the sky-blue background.
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(appBackgroundBrush)
-                .padding(paddingValues)
+                .background(skyBlueWhiteBg)
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Why we use this: Tagline between Header and Shop Cards in same 24.sp font size as Logo.
-            Text(
-                text = "Find what you want to Buy - Amreli",
-                fontFamily = bricolageFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 24.sp,
-                lineHeight = 28.sp,
-                letterSpacing = (-0.5).sp,
-                color = Color(0xFF1E3A8A),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 12.dp)
-            )
+            // Why we use this: Black 26.sp Tagline inside LazyColumn so it scrolls with Shop Cards.
+            item {
+                Text(
+                    text = "Find what you want to Buy - Amreli",
+                    fontFamily = bricolageFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 26.sp,
+                    lineHeight = 30.sp,
+                    letterSpacing = (-0.5).sp,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, top = 14.dp, bottom = 2.dp)
+                )
+            }
 
-            // Why we use this: 10.dp horizontal padding makes Shop Cards slightly wider.
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(filteredShops) { shop ->
+            // Why we use this: Renders each Shop Card with 10.dp side padding for wider cards.
+            items(filteredShops) { shop ->
+                Box(modifier = Modifier.padding(horizontal = 10.dp)) {
                     ShopCard(shop = shop, robotoFont = robotoFont)
+                }
+            }
+
+            // Why we use this: Blue Footer at the bottom with white text "Savarkundla.in by PiCell Company.".
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1E3A8A))
+                        .navigationBarsPadding()
+                        .padding(vertical = 18.dp, horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "Savarkundla.in by PiCell Company.",
+                        fontFamily = robotoFont,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -593,7 +605,7 @@ fun SavarkundlaApp() {
     }
 }
 
-// Why we use this: Wider Shop Card with thin light-black border, shop image, and buttons.
+// Why we use this: Wider Shop Card with thin light-black border and text-only Call/WhatsApp buttons.
 @Composable
 fun ShopCard(shop: Shop, robotoFont: FontFamily) {
     val context = LocalContext.current
@@ -601,7 +613,6 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        // Why we use this: Thin light-black border around every Shop Card.
         border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -677,7 +688,7 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
                 }
             }
 
-            // Why we use this: Displays Shop Name, Short Address, and Call/WhatsApp buttons.
+            // Why we use this: Displays Shop Name, Short Address, and text-only Call/WhatsApp buttons.
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = shop.name,
@@ -715,7 +726,7 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Why we use this: Opens phone dialer with the shop's number.
+                    // Why we use this: Text-only Call button that opens the phone dialer.
                     Button(
                         onClick = {
                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${shop.phone}"))
@@ -730,16 +741,15 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
                         ),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Call,
-                            contentDescription = "Call",
-                            modifier = Modifier.size(16.dp)
+                        Text(
+                            text = "Call",
+                            fontFamily = robotoFont,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Call", fontFamily = robotoFont, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
 
-                    // Why we use this: Opens WhatsApp chat directly with the shop owner.
+                    // Why we use this: Text-only WhatsApp button that opens a chat with the shop owner.
                     Button(
                         onClick = {
                             val url = "https://api.whatsapp.com/send?phone=91${shop.phone}&text=Hi%20${shop.name},%20I%20found%20your%20shop%20on%20Savarkundla.in!"
@@ -755,13 +765,12 @@ fun ShopCard(shop: Shop, robotoFont: FontFamily) {
                         ),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Icon(
-                            Icons.Outlined.ChatBubbleOutline,
-                            contentDescription = "WhatsApp",
-                            modifier = Modifier.size(16.dp)
+                        Text(
+                            text = "WhatsApp",
+                            fontFamily = robotoFont,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("WhatsApp", fontFamily = robotoFont, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
                 }
             }
