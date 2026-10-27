@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.view.Window
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,14 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
-// Why we use this: Holds data for each shop card on the Home page.
+// Why we use this: Holds data for each shop card and full shop page.
 data class ShopItem(
     val id: String = "",
     val name: String = "",
     val shopType: String = "",
     val shortAddress: String = "",
-    val reviewCount: Int = 0,
-    val rating: Double = 4.8,
+    val reviewCount: Int = 132,
+    val rating: Double = 4.2,
     val imageUrl: String = "",
     val itemsSold: String = "",
     val phone: String = ""
@@ -159,7 +160,7 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
     }
 }
 
-// Why we use this: Manages navigation between Home and Jobs, plus dialogs and data lists.
+// Why we use this: Manages navigation between Home, Shop Page, and Jobs, plus dialogs.
 @Composable
 fun SavarkundlaRoot() {
     val logoFont = rememberLogoFont()
@@ -167,11 +168,19 @@ fun SavarkundlaRoot() {
     val rgbBrush = rememberRgbAnimation()
 
     var currentPage by remember { mutableStateOf("Home") }
+    var selectedShop by remember { mutableStateOf<ShopItem?>(null) }
+    var selectedJob by remember { mutableStateOf<JobPost?>(null) }
+
     var searchQuery by remember { mutableStateOf("") }
     var activeCategory by remember { mutableStateOf("All") }
     var showFilterModal by remember { mutableStateOf(false) }
     var showAddShopModal by remember { mutableStateOf(false) }
     var showCreateJobModal by remember { mutableStateOf(false) }
+
+    // Why we use this: Pressing the phone's Back button closes the Shop Page back to Home.
+    BackHandler(enabled = selectedShop != null) {
+        selectedShop = null
+    }
 
     // Why we use this: Captures spoken words from the Mic button and puts them into Search.
     val speechLauncher = rememberLauncherForActivityResult(
@@ -192,10 +201,10 @@ fun SavarkundlaRoot() {
                 name = "Kundla Weighing Scales & Hardware",
                 shopType = "Hardware & Scales",
                 shortAddress = "Navapara, Main Bazaar",
-                reviewCount = 142,
-                rating = 4.9,
+                reviewCount = 132,
+                rating = 4.2,
                 imageUrl = "https://images.unsplash.com/photo-1581783898377-1c85bf937427?w=800&q=80",
-                itemsSold = "Digital scales, industrial weights, iron tools, hardware",
+                itemsSold = "Digital scales, industrial weights, iron tools, hardware items",
                 phone = "9876543210"
             ),
             ShopItem(
@@ -206,7 +215,7 @@ fun SavarkundlaRoot() {
                 reviewCount = 218,
                 rating = 4.8,
                 imageUrl = "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800&q=80",
-                itemsSold = "iPhones, Samsung phones, Smart TVs, AC, Refrigerators",
+                itemsSold = "iPhones, Samsung phones, Smart TVs, AC, Refrigerators, washing machines",
                 phone = "9876543211"
             ),
             ShopItem(
@@ -217,7 +226,7 @@ fun SavarkundlaRoot() {
                 reviewCount = 96,
                 rating = 4.7,
                 imageUrl = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80",
-                itemsSold = "Men's wear, jeans, shirts, wedding sherwani, sarees",
+                itemsSold = "Men's wear, jeans, shirts, wedding sherwani, sarees, kids wear",
                 phone = "9876543212"
             ),
             ShopItem(
@@ -281,7 +290,7 @@ fun SavarkundlaRoot() {
     Scaffold(
         containerColor = skyBg,
         topBar = {
-            // Why we use this: Renders the top header for either the Home page or the Jobs page.
+            // Why we use this: Renders the top header for Home, Shop Page, or Jobs page.
             Surface(color = Color.White, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier
@@ -297,11 +306,14 @@ fun SavarkundlaRoot() {
                         // Why we use this: Clicking the Savarkundla.in logo always brings the user to Home.
                         BrandLogo(
                             logoFont = logoFont,
-                            onClick = { currentPage = "Home" }
+                            onClick = {
+                                selectedShop = null
+                                currentPage = "Home"
+                            }
                         )
 
                         if (currentPage == "Home") {
-                            // Why we use this: 92.dp width aligns Filter's left edge with the Mic button's left edge below.
+                            // Why we use this: 92.dp width aligns Filter's left edge with the Mic button's left edge.
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
@@ -329,8 +341,8 @@ fun SavarkundlaRoot() {
                         }
                     }
 
-                    // Why we use this: Shows Search, Mic, and '+' row only on the Home page.
-                    if (currentPage == "Home") {
+                    // Why we use this: Shows Search, Mic, and '+' row on Home when not inside a Shop Page.
+                    if (currentPage == "Home" && selectedShop == null) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -430,11 +442,14 @@ fun SavarkundlaRoot() {
             BottomBarNavigation(
                 currentPage = currentPage,
                 roboto = roboto,
-                onSelectPage = { currentPage = it }
+                onSelectPage = { page ->
+                    selectedShop = null
+                    currentPage = page
+                }
             )
         }
     ) { innerPadding ->
-        // Why we use this: Switches between the Home page and the Jobs page.
+        // Why we use this: Displays either the full Shop Page, the Home list, or the Jobs list.
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -442,7 +457,15 @@ fun SavarkundlaRoot() {
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (currentPage == "Home") {
+            if (selectedShop != null) {
+                item {
+                    ShopDetailPage(
+                        shop = selectedShop!!,
+                        roboto = roboto,
+                        onBack = { selectedShop = null }
+                    )
+                }
+            } else if (currentPage == "Home") {
                 item {
                     Text(
                         text = "Find what you want to Buy - Amreli",
@@ -460,7 +483,11 @@ fun SavarkundlaRoot() {
 
                 items(visibleShops) { shop ->
                     Box(modifier = Modifier.padding(horizontal = 10.dp)) {
-                        ShopItemCard(shop = shop, roboto = roboto)
+                        ShopItemCard(
+                            shop = shop,
+                            roboto = roboto,
+                            onOpenShop = { selectedShop = it }
+                        )
                     }
                 }
             } else {
@@ -481,7 +508,11 @@ fun SavarkundlaRoot() {
 
                 items(jobList) { job ->
                     Box(modifier = Modifier.padding(horizontal = 10.dp)) {
-                        JobPostCard(job = job, roboto = roboto)
+                        JobPostCard(
+                            job = job,
+                            roboto = roboto,
+                            onViewJob = { selectedJob = it }
+                        )
                     }
                 }
             }
@@ -520,6 +551,52 @@ fun SavarkundlaRoot() {
                 showFilterModal = false
             },
             onDismiss = { showFilterModal = false }
+        )
+    }
+
+    // Why we use this: Shows full job details when clicking View on a Job Card.
+    if (selectedJob != null) {
+        val context = LocalContext.current
+        val job = selectedJob!!
+        AlertDialog(
+            onDismissRequest = { selectedJob = null },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    text = job.roleTitle,
+                    fontFamily = roboto,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 19.sp,
+                    color = Color(0xFF1E3A8A)
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Shop: ${job.shopName}", fontFamily = roboto, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("Salary: ${job.salary}", fontFamily = roboto, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                    Text("Address: ${job.address}", fontFamily = roboto, color = Color.Black)
+                    Text("GST Number: ${job.gstNumber}", fontFamily = roboto, color = Color(0xFF475569))
+                    Text("Phone: ${job.phone}", fontFamily = roboto, color = Color(0xFF475569))
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val link = "https://api.whatsapp.com/send?phone=91${job.phone}&text=Hi%20${job.shopName},%20I%20want%20to%20apply%20for%20${job.roleTitle}%20on%20Savarkundla.in!"
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                        selectedJob = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                ) {
+                    Text("Apply Now", fontFamily = roboto, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedJob = null }) {
+                    Text("Close", fontFamily = roboto, fontWeight = FontWeight.Bold)
+                }
+            }
         )
     }
 
@@ -664,6 +741,482 @@ fun BottomBarNavigation(currentPage: String, roboto: FontFamily, onSelectPage: (
                             color = if (isSelected) Color.White else Color(0xFF1E3A8A)
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+// Why we use this: Displays each Shop Card with upper-right review, blue title, red map icon, and View/Call/WhatsApp.
+@Composable
+fun ShopItemCard(
+    shop: ShopItem,
+    roboto: FontFamily,
+    onOpenShop: (ShopItem) -> Unit
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenShop(shop) },
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Why we use this: Shop image with review badge ⭐ 4.2 (132) at the upper-right corner.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.25f)
+                    .background(Color(0xFFE2E8F0))
+            ) {
+                AsyncImage(
+                    model = shop.imageUrl,
+                    contentDescription = shop.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                Surface(
+                    color = Color.White.copy(alpha = 0.95f),
+                    shape = RoundedCornerShape(8.dp),
+                    shadowElevation = 2.dp,
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .align(Alignment.TopEnd)
+                ) {
+                    Text(
+                        text = "⭐ ${shop.rating} (${shop.reviewCount})",
+                        fontFamily = roboto,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = Color.Black,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Why we use this: Displays Shop Name in blue text.
+                Text(
+                    text = shop.name,
+                    fontFamily = roboto,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E3A8A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Why we use this: Red Map Icon + Black Short Address on left, and Shop Type on right.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Address",
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = shop.shortAddress,
+                            fontFamily = roboto,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            color = Color.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        color = Color(0xFFEFF6FF),
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(0.8.dp, Color(0xFF1E3A8A))
+                    ) {
+                        Text(
+                            text = shop.shopType,
+                            fontFamily = roboto,
+                            color = Color(0xFF1E3A8A),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Why we use this: View button on the left of Call button, followed by WhatsApp.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onOpenShop(shop) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.3.dp, Color(0xFF1E3A8A)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF1E3A8A)
+                        ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("View", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${shop.phone}")))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("Call", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            val link = "https://api.whatsapp.com/send?phone=91${shop.phone}&text=Hi%20${shop.name},%20I%20found%20your%20shop%20on%20Savarkundla.in!"
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("WhatsApp", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Why we use this: Full Shop Page opened when clicking View or tapping on a Shop Card.
+@Composable
+fun ShopDetailPage(
+    shop: ShopItem,
+    roboto: FontFamily,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    ) {
+        // Why we use this: Back button to return to the Home shop list.
+        OutlinedButton(
+            onClick = onBack,
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.2.dp, Color(0xFF1E3A8A)),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.White,
+                contentColor = Color(0xFF1E3A8A)
+            ),
+            modifier = Modifier.height(38.dp)
+        ) {
+            Text("Back to Shops", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.25f)
+                        .background(Color(0xFFE2E8F0))
+                ) {
+                    AsyncImage(
+                        model = shop.imageUrl,
+                        contentDescription = shop.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    Surface(
+                        color = Color.White.copy(alpha = 0.95f),
+                        shape = RoundedCornerShape(8.dp),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .align(Alignment.TopEnd)
+                    ) {
+                        Text(
+                            text = "⭐ ${shop.rating} (${shop.reviewCount})",
+                            fontFamily = roboto,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = Color.Black,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = shop.name,
+                        fontFamily = roboto,
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1E3A8A)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Address",
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = shop.shortAddress,
+                                fontFamily = roboto,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp,
+                                color = Color.Black
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Surface(
+                            color = Color(0xFFEFF6FF),
+                            shape = RoundedCornerShape(6.dp),
+                            border = BorderStroke(0.8.dp, Color(0xFF1E3A8A))
+                        ) {
+                            Text(
+                                text = shop.shopType,
+                                fontFamily = roboto,
+                                color = Color(0xFF1E3A8A),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFCBD5E1))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Available Products & Services",
+                        fontFamily = roboto,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = shop.itemsSold,
+                        fontFamily = roboto,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xFF334155)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${shop.phone}")))
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                        ) {
+                            Text("Call", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                val link = "https://api.whatsapp.com/send?phone=91${shop.phone}&text=Hi%20${shop.name},%20I%20saw%20your%20shop%20page%20on%20Savarkundla.in!"
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                        ) {
+                            Text("WhatsApp", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Why we use this: Displays each available job in a Card with View and Apply buttons.
+@Composable
+fun JobPostCard(
+    job: JobPost,
+    roboto: FontFamily,
+    onViewJob: (JobPost) -> Unit
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color(0xFFEFF6FF),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = "GST: ${job.gstNumber}",
+                        fontFamily = roboto,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color(0xFF1E3A8A),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                Text(
+                    text = job.salary,
+                    fontFamily = roboto,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    color = Color(0xFF16A34A)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = job.roleTitle,
+                fontFamily = roboto,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp,
+                color = Color(0xFF0F172A)
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = job.shopName,
+                fontFamily = roboto,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color(0xFF1E3A8A)
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = "Location",
+                    tint = Color(0xFFDC2626),
+                    modifier = Modifier.size(15.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = job.address,
+                    fontFamily = roboto,
+                    fontSize = 13.sp,
+                    color = Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Why we use this: View and Apply buttons instead of Call and WhatsApp on Job Cards.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { onViewJob(job) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.3.dp, Color(0xFF1E3A8A)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF1E3A8A)
+                    )
+                ) {
+                    Text("View", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
+                Button(
+                    onClick = {
+                        val link = "https://api.whatsapp.com/send?phone=91${job.phone}&text=Hi%20${job.shopName},%20I%20want%20to%20apply%20for%20${job.roleTitle}%20on%20Savarkundla.in!"
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                ) {
+                    Text("Apply", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -881,274 +1434,8 @@ fun CreateJobDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", fontFamily = roboto, fontWeight = FontWeight.Bold)
+                Text("Close", fontFamily = roboto, fontWeight = FontWeight.Bold)
             }
         }
     )
-}
-
-// Why we use this: Displays each available job in a bordered Card on the Jobs page.
-@Composable
-fun JobPostCard(job: JobPost, roboto: FontFamily) {
-    val context = LocalContext.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = Color(0xFFEFF6FF),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        text = "GST: ${job.gstNumber}",
-                        fontFamily = roboto,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF1E3A8A),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-                Text(
-                    text = job.salary,
-                    fontFamily = roboto,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp,
-                    color = Color(0xFF16A34A)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = job.roleTitle,
-                fontFamily = roboto,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
-                color = Color(0xFF0F172A)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = job.shopName,
-                fontFamily = roboto,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = Color(0xFF1E3A8A)
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = "Location",
-                    tint = Color(0xFF64748B),
-                    modifier = Modifier.size(15.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = job.address,
-                    fontFamily = roboto,
-                    fontSize = 13.sp,
-                    color = Color(0xFF64748B)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Button(
-                    onClick = {
-                        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${job.phone}")))
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(42.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
-                ) {
-                    Text("Call", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-
-                Button(
-                    onClick = {
-                        val link = "https://api.whatsapp.com/send?phone=91${job.phone}&text=Hi%20${job.shopName},%20I%20want%20to%20apply%20for%20${job.roleTitle}%20on%20Savarkundla.in!"
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(42.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
-                ) {
-                    Text("WhatsApp", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-            }
-        }
-    }
-}
-
-// Why we use this: Displays each Shop Card with photo, rating, address, and Call/WhatsApp buttons.
-@Composable
-fun ShopItemCard(shop: ShopItem, roboto: FontFamily) {
-    val context = LocalContext.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(0.7.dp, Color.Black.copy(alpha = 0.28f)),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.25f)
-                    .background(Color(0xFFE2E8F0))
-            ) {
-                AsyncImage(
-                    model = shop.imageUrl,
-                    contentDescription = shop.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                Surface(
-                    color = Color(0xFF0F172A).copy(alpha = 0.82f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .align(Alignment.TopStart)
-                ) {
-                    Text(
-                        text = shop.shopType,
-                        fontFamily = roboto,
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
-                }
-
-                Surface(
-                    color = Color.White.copy(alpha = 0.95f),
-                    shape = RoundedCornerShape(8.dp),
-                    shadowElevation = 2.dp,
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .align(Alignment.BottomEnd)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFFF59E0B),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${shop.rating}",
-                            fontFamily = roboto,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = Color(0xFF0F172A)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "(${shop.reviewCount} reviews)",
-                            fontFamily = roboto,
-                            fontSize = 11.sp,
-                            color = Color(0xFF475569)
-                        )
-                    }
-                }
-            }
-
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = shop.name,
-                    fontFamily = roboto,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = "Address",
-                        tint = Color(0xFF64748B),
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = shop.shortAddress,
-                        fontFamily = roboto,
-                        fontSize = 13.sp,
-                        color = Color(0xFF64748B),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${shop.phone}")))
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(42.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("Call", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-
-                    Button(
-                        onClick = {
-                            val link = "https://api.whatsapp.com/send?phone=91${shop.phone}&text=Hi%20${shop.name},%20I%20found%20your%20shop%20on%20Savarkundla.in!"
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(42.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("WhatsApp", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-                }
-            }
-        }
-    }
 }
