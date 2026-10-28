@@ -62,14 +62,19 @@ data class ShopItem(
     val phone: String = ""
 )
 
-// Why we use this: Holds data for each job card on the Jobs page, including GST number.
+// Why we use this: Holds comprehensive data for Job Cards and the redesigned Job Popup.
 data class JobPost(
     val id: String = "",
     val roleTitle: String = "",
     val shopName: String = "",
     val salary: String = "",
-    val address: String = "",
-    val phone: String = "",
+    val education: String = "10th / 12th / Graduate",
+    val experience: String = "Freshers & Experienced",
+    val jobTime: String = "9:00 AM - 8:00 PM",
+    val fullAddress: String = "Main Market, Savarkundla",
+    val aboutJob: String = "Handling customer inquiries, inventory maintenance, and counter sales management.",
+    val interviewerName: String = "Owner / HR Manager",
+    val interviewerNumber: String = "9876543210",
     val gstNumber: String = ""
 )
 
@@ -117,7 +122,7 @@ fun rememberAppRobotoFont(): FontFamily {
     }
 }
 
-// Why we use this: Generates the moving RGB border animation for the Search bar and Mic button.
+// Why we use this: Generates the moving RGB border animation for Search and Mic buttons.
 @Composable
 fun rememberRgbAnimation(): Brush {
     val transition = rememberInfiniteTransition(label = "rgb")
@@ -145,12 +150,12 @@ fun rememberRgbAnimation(): Brush {
     )
 }
 
-// Why we use this: Premium gradient mix of light black and deep sky-blue for Shop buttons.
-val premiumDarkSkyBrush = Brush.horizontalGradient(
+// Why we use this: Rich Sky-Blue dominant gradient mixed with deep black for premium buttons.
+val premiumSkyBlueMixBrush = Brush.horizontalGradient(
     colors = listOf(
-        Color(0xFF0D1B2A), // Soft midnight / light black
-        Color(0xFF1B3A4B), // Deep sky-blue tint
-        Color(0xFF162A45)  // Rich slate blue
+        Color(0xFF0A2540), // Dark charcoal navy base
+        Color(0xFF0284C7), // Vibrant sky-blue
+        Color(0xFF38BDF8)  // Bright sky-blue highlight
     )
 )
 
@@ -190,7 +195,6 @@ fun CompactCornerBadge(
         }
     }
 
-    // Why we use this: Flush upper-right corner styling with tight padding around text.
     Surface(
         color = Color.White.copy(alpha = 0.96f),
         shape = RoundedCornerShape(topEnd = 16.dp, bottomStart = 10.dp),
@@ -309,8 +313,13 @@ fun SavarkundlaRoot() {
                 roleTitle = "Showroom Sales Executive",
                 shopName = "Patel Electronics & Mobile",
                 salary = "₹12,000 - ₹15,000 / month",
-                address = "Jeshar Road, Near Bus Stand",
-                phone = "9876543211",
+                education = "12th Pass / Graduate",
+                experience = "Minimum 1 Year Retail",
+                jobTime = "9:30 AM - 8:30 PM",
+                fullAddress = "Shop No 4, Patel Complex, Jeshar Road, Savarkundla",
+                aboutJob = "Responsible for customer greetings, smartphone demonstrations, and sales billing.",
+                interviewerName = "Rajeshbhai Patel",
+                interviewerNumber = "9876543211",
                 gstNumber = "24AABCP1234F1Z5"
             ),
             JobPost(
@@ -318,8 +327,13 @@ fun SavarkundlaRoot() {
                 roleTitle = "Billing & Computer Operator",
                 shopName = "Bapa Sitaram Supermart",
                 salary = "₹10,000 - ₹13,000 / month",
-                address = "Amreli Road, Savarkundla",
-                phone = "9876543213",
+                education = "10th / 12th Pass",
+                experience = "Freshers Welcome",
+                jobTime = "8:00 AM - 7:00 PM",
+                fullAddress = "Near Gayatri Temple, Amreli Road, Savarkundla",
+                aboutJob = "Operating barcode billing system, cash handling, and daily grocery stock registers.",
+                interviewerName = "Hareshbhai Dholakia",
+                interviewerNumber = "9876543213",
                 gstNumber = "24BBCSP5678G1Z2"
             ),
             JobPost(
@@ -327,8 +341,13 @@ fun SavarkundlaRoot() {
                 roleTitle = "Scale Assembly Technician",
                 shopName = "Kundla Weighing Scales & Hardware",
                 salary = "₹14,000 - ₹18,000 / month",
-                address = "Navapara, Main Bazaar",
-                phone = "9876543210",
+                education = "ITI / Technical Background",
+                experience = "2+ Years Hardware Experience",
+                jobTime = "9:00 AM - 7:30 PM",
+                fullAddress = "Navapara, Main Bazaar, Savarkundla",
+                aboutJob = "Assembling digital load cells, manual weights testing, calibration and delivery checks.",
+                interviewerName = "Mansukhbhai Chauhan",
+                interviewerNumber = "9876543210",
                 gstNumber = "24CCDKW9012H1Z9"
             )
         )
@@ -609,126 +628,20 @@ fun SavarkundlaRoot() {
         )
     }
 
-    // Why we use this: Job details popup formatted with Maroon typography and thin dividing lines.
+    // Why we use this: Redesigned Job Details popup with comprehensive fields, clean divider lines, and heavy-weight text.
     if (selectedJob != null) {
-        val context = LocalContext.current
-        val job = selectedJob!!
-        AlertDialog(
-            onDismissRequest = { selectedJob = null },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(16.dp),
-            title = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = job.roleTitle,
-                            fontFamily = roboto,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 19.sp,
-                            color = Color(0xFF800000)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "GST: ${job.gstNumber}",
-                        fontFamily = roboto,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF800000).copy(alpha = 0.8f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(thickness = 0.8.dp, color = Color(0xFF800000).copy(alpha = 0.3f))
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Business: ${job.shopName}",
-                        fontFamily = roboto,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = Color(0xFF800000)
-                    )
-                    HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFE2E8F0))
-                    Text(
-                        text = "Salary: ${job.salary}",
-                        fontFamily = roboto,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp,
-                        color = Color(0xFF800000)
-                    )
-                    HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFE2E8F0))
-                    Text(
-                        text = "Location: ${job.address}",
-                        fontFamily = roboto,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp,
-                        color = Color(0xFF800000).copy(alpha = 0.9f)
-                    )
-                    HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFE2E8F0))
-                    Text(
-                        text = "Contact: ${job.phone}",
-                        fontFamily = roboto,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp,
-                        color = Color(0xFF800000).copy(alpha = 0.85f)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val link = "https://api.whatsapp.com/send?phone=91${job.phone}&text=Hi%20${job.shopName},%20I%20want%20to%20apply%20for%20${job.roleTitle}%20on%20Savarkundla.in!"
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-                        selectedJob = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF800000))
-                ) {
-                    Text("Apply on WhatsApp", fontFamily = roboto, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { selectedJob = null }) {
-                    Text("Close", fontFamily = roboto, fontWeight = FontWeight.Bold, color = Color(0xFF800000))
-                }
-            }
+        DetailedJobPopup(
+            job = selectedJob!!,
+            roboto = roboto,
+            onDismiss = { selectedJob = null }
         )
     }
 
+    // Why we use this: Redesigned '+' shop registration modal with high-contrast benefit cards and clear pricing.
     if (showAddShopModal) {
-        AlertDialog(
-            onDismissRequest = { showAddShopModal = false },
-            title = {
-                Text("List Your Shop on Savarkundla.in", fontFamily = roboto, fontWeight = FontWeight.ExtraBold)
-            },
-            text = {
-                Text(
-                    text = "Grow your business in Savarkundla!\n\n" +
-                            "• Shop Photo & Verified Profile\n" +
-                            "• Appear in Customer Product Searches\n" +
-                            "• Direct Call & WhatsApp Leads\n\n" +
-                            "Subscription Plan: ₹2,000 / month",
-                    fontFamily = roboto,
-                    fontWeight = FontWeight.Medium
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showAddShopModal = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
-                ) {
-                    Text("Join via WhatsApp", fontFamily = roboto, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddShopModal = false }) {
-                    Text("Close", fontFamily = roboto, fontWeight = FontWeight.Bold)
-                }
-            }
+        RedesignedAddShopDialog(
+            roboto = roboto,
+            onDismiss = { showAddShopModal = false }
         )
     }
 
@@ -866,7 +779,7 @@ fun BottomBarNavigation(currentPage: String, roboto: FontFamily, onSelectPage: (
     }
 }
 
-// Why we use this: Shop Card with corner-flush badge, clean thin divider lines, and premium dark sky-blue buttons.
+// Why we use this: Shop Card featuring blue text for name & address and vibrant sky-blue mixed buttons.
 @Composable
 fun ShopItemCard(
     shop: ShopItem,
@@ -885,7 +798,6 @@ fun ShopItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Why we use this: Shop image with Animated Badge attached directly to the upper-right corner.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -899,7 +811,6 @@ fun ShopItemCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Why we use this: Sits directly at the upper-right edge of the card.
                 CompactCornerBadge(
                     rating = shop.rating,
                     reviewCount = shop.reviewCount,
@@ -910,7 +821,7 @@ fun ShopItemCard(
             }
 
             Column(modifier = Modifier.padding(14.dp)) {
-                // Why we use this: Shop Name in blue text with a thin line directly beneath it.
+                // Why we use this: Shop Name in signature Blue.
                 Text(
                     text = shop.name,
                     fontFamily = roboto,
@@ -925,13 +836,13 @@ fun ShopItemCard(
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Why we use this: Short Address without map icon, lighter weight, and a thin line below it.
+                // Why we use this: Short Address in Blue font with clear semi-bold weight.
                 Text(
                     text = shop.shortAddress,
                     fontFamily = roboto,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp,
-                    color = Color(0xFF1E293B),
+                    color = Color(0xFF1E3A8A),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -940,7 +851,7 @@ fun ShopItemCard(
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Why we use this: View, Call, and WhatsApp buttons with light black & sky-blue mix background.
+                // Why we use this: View, Call, WhatsApp buttons featuring a vibrant Sky-Blue dominant mix gradient.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -976,7 +887,7 @@ fun ShopItemCard(
     }
 }
 
-// Why we use this: Custom button component for the light black and sky-blue mix background.
+// Why we use this: Renders buttons with rich Sky-Blue mixed gradient with subtle border.
 @Composable
 fun PremiumShopButton(
     text: String,
@@ -989,14 +900,14 @@ fun PremiumShopButton(
         modifier = modifier
             .height(40.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(premiumDarkSkyBrush)
-            .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .background(premiumSkyBlueMixBrush)
+            .border(1.dp, Color(0xFF7DD3FC), RoundedCornerShape(10.dp))
             .clickable { onClick() }
     ) {
         Text(
             text = text,
             fontFamily = roboto,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
             fontSize = 13.sp,
             color = Color.White
         )
@@ -1062,9 +973,9 @@ fun ShopDetailPage(
                     Text(
                         text = shop.shortAddress,
                         fontFamily = roboto,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = Color(0xFF1E293B)
+                        color = Color(0xFF1E3A8A)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -1120,7 +1031,7 @@ fun ShopDetailPage(
     }
 }
 
-// Why we use this: Job Card with attached top-right GST badge, Maroon text, thin lines, and standard View button.
+// Why we use this: Job Card displaying strictly GST Badge, Job Name, Business Name, and Salary in uniform, large black font.
 @Composable
 fun JobPostCard(
     job: JobPost,
@@ -1128,7 +1039,6 @@ fun JobPostCard(
     onViewJob: (JobPost) -> Unit
 ) {
     val context = LocalContext.current
-    val maroon = Color(0xFF800000)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1138,79 +1048,75 @@ fun JobPostCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Why we use this: GST Number Badge attached directly to the upper-right corner of the Job Card.
+            // Why we use this: GST Number Badge flush at the upper right corner.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 Surface(
-                    color = maroon.copy(alpha = 0.12f),
+                    color = Color(0xFF800000).copy(alpha = 0.12f),
                     shape = RoundedCornerShape(topEnd = 16.dp, bottomStart = 10.dp),
-                    border = BorderStroke(0.8.dp, maroon.copy(alpha = 0.35f))
+                    border = BorderStroke(0.8.dp, Color(0xFF800000).copy(alpha = 0.35f))
                 ) {
                     Text(
                         text = "GST: ${job.gstNumber}",
                         fontFamily = roboto,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 11.sp,
-                        color = maroon,
+                        color = Color(0xFF800000),
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                     )
                 }
             }
 
-            Column(modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 4.dp)) {
-                // 1. Job Role Title in Maroon
+            // Why we use this: Gap between upper-right GST badge and the Job details below.
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                // 1. Job Name (Slightly big, bold, black)
                 Text(
                     text = job.roleTitle,
                     fontFamily = roboto,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp,
-                    color = maroon
+                    fontSize = 17.sp,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(5.dp))
-                HorizontalDivider(thickness = 0.6.dp, color = maroon.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+                HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // 2. Business Name in Maroon
+                // 2. Business Name (Same size: 17.sp, bold, black)
                 Text(
                     text = job.shopName,
                     fontFamily = roboto,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = maroon.copy(alpha = 0.9f)
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(5.dp))
-                HorizontalDivider(thickness = 0.6.dp, color = maroon.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+                HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // 3. Salary in Maroon
+                // 3. Salary (Same size: 17.sp, bold, black)
                 Text(
-                    text = "Salary: ${job.salary}",
+                    text = job.salary,
                     fontFamily = roboto,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp,
-                    color = maroon
-                )
-
-                Spacer(modifier = Modifier.height(5.dp))
-                HorizontalDivider(thickness = 0.6.dp, color = maroon.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(5.dp))
-
-                // 4. Short Address in Maroon
-                Text(
-                    text = job.address,
-                    fontFamily = roboto,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp,
-                    color = maroon.copy(alpha = 0.85f)
+                    fontSize = 17.sp,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Why we use this: Normal outlined View button (like Home navigation) and solid Apply button.
+                // Why we use this: View (standard outlined button) and Apply button.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1232,7 +1138,7 @@ fun JobPostCard(
 
                     Button(
                         onClick = {
-                            val link = "https://api.whatsapp.com/send?phone=91${job.phone}&text=Hi%20${job.shopName},%20I%20want%20to%20apply%20for%20${job.roleTitle}%20on%20Savarkundla.in!"
+                            val link = "https://api.whatsapp.com/send?phone=91${job.interviewerNumber}&text=Hi%20${job.shopName},%20I%20am%20applying%20for%20${job.roleTitle}%20on%20Savarkundla.in!"
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
                         },
                         modifier = Modifier
@@ -1245,6 +1151,282 @@ fun JobPostCard(
                     }
                 }
             }
+        }
+    }
+}
+
+// Why we use this: Redesigned Job Popup containing lines and all 9 required job attributes.
+@Composable
+fun DetailedJobPopup(
+    job: JobPost,
+    roboto: FontFamily,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(18.dp),
+        title = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "JOB SPECIFICATION",
+                        fontFamily = roboto,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1E3A8A)
+                    )
+                    Surface(
+                        color = Color(0xFFEFF6FF),
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(0.8.dp, Color(0xFF1E3A8A))
+                    ) {
+                        Text(
+                            text = "GST VERIFIED",
+                            fontFamily = roboto,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 10.sp,
+                            color = Color(0xFF1E3A8A),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(thickness = 1.5.dp, color = Color(0xFF1E3A8A))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                JobDetailRow(label = "Job Name", value = job.roleTitle, roboto = roboto, isHighlighted = true)
+                JobDetailRow(label = "Salary", value = job.salary, roboto = roboto, isGreen = true)
+                JobDetailRow(label = "Business", value = job.shopName, roboto = roboto)
+                JobDetailRow(label = "Education", value = job.education, roboto = roboto)
+                JobDetailRow(label = "Experience", value = job.experience, roboto = roboto)
+                JobDetailRow(label = "Time", value = job.jobTime, roboto = roboto)
+                JobDetailRow(label = "Full Address", value = job.fullAddress, roboto = roboto)
+                JobDetailRow(label = "About Job", value = job.aboutJob, roboto = roboto)
+                JobDetailRow(label = "Interviewer Name", value = job.interviewerName, roboto = roboto)
+                JobDetailRow(label = "Interviewer Number", value = job.interviewerNumber, roboto = roboto)
+                JobDetailRow(label = "GST Number", value = job.gstNumber, roboto = roboto)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val link = "https://api.whatsapp.com/send?phone=91${job.interviewerNumber}&text=Hi%20${job.interviewerName},%20I%20am%20applying%20for%20the%20${job.roleTitle}%20role%20at%20${job.shopName}%20via%20Savarkundla.in!"
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("APPLY VIA WHATSAPP", fontFamily = roboto, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.2.dp, Color(0xFFCBD5E1)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("CLOSE", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF475569))
+            }
+        }
+    )
+}
+
+// Why we use this: Reusable row with dividing lines and bold labels for the Job details modal.
+@Composable
+fun JobDetailRow(
+    label: String,
+    value: String,
+    roboto: FontFamily,
+    isHighlighted: Boolean = false,
+    isGreen: Boolean = false
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Text(
+                text = label,
+                fontFamily = roboto,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 13.sp,
+                color = Color(0xFF475569),
+                modifier = Modifier.weight(0.42f)
+            )
+            Text(
+                text = value,
+                fontFamily = roboto,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = when {
+                    isHighlighted -> Color(0xFF1E3A8A)
+                    isGreen -> Color(0xFF16A34A)
+                    else -> Color.Black
+                },
+                modifier = Modifier.weight(0.58f),
+                textAlign = TextAlign.End
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE2E8F0))
+    }
+}
+
+// Why we use this: Redesigned high-impact '+' modal for Shop owners showing full ₹2,000/mo package.
+@Composable
+fun RedesignedAddShopDialog(
+    roboto: FontFamily,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "GROW YOUR SHOP",
+                        fontFamily = roboto,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1E3A8A)
+                    )
+                    Surface(
+                        color = Color(0xFFFFF7ED),
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(0.8.dp, Color(0xFFFF6B00))
+                    ) {
+                        Text(
+                            text = "₹2,000 / mo",
+                            fontFamily = roboto,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 12.sp,
+                            color = Color(0xFFFF6B00),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(thickness = 1.5.dp, color = Color(0xFF1E3A8A))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Get your business listed on Savarkundla.in and connect directly with local city buyers.",
+                    fontFamily = roboto,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp,
+                    color = Color(0xFF334155),
+                    lineHeight = 18.sp
+                )
+
+                // Feature Point 1
+                PartnerBenefitItem(
+                    title = "Verified Profile & Badge",
+                    desc = "Stand out with genuine customer reviews and animated shop categories.",
+                    roboto = roboto
+                )
+
+                // Feature Point 2
+                PartnerBenefitItem(
+                    title = "Search & Voice Prominence",
+                    desc = "Appear on top when customers use 'Ask Anything' voice or keyword search.",
+                    roboto = roboto
+                )
+
+                // Feature Point 3
+                PartnerBenefitItem(
+                    title = "Direct WhatsApp & Call Leads",
+                    desc = "Zero commissions. Customers call or chat with your shop directly.",
+                    roboto = roboto
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val link = "https://api.whatsapp.com/send?phone=919876543210&text=Hello%20Savarkundla.in,%20I%20want%20to%20list%20my%20Shop%20under%20the%20₹2,000/month%20plan."
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("JOIN PARTNER NETWORK", fontFamily = roboto, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("MAYBE LATER", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64748B))
+            }
+        }
+    )
+}
+
+// Why we use this: Reusable benefit item for the redesigned '+' modal.
+@Composable
+fun PartnerBenefitItem(
+    title: String,
+    desc: String,
+    roboto: FontFamily
+) {
+    Surface(
+        color = Color(0xFFF8FAFC),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(0.6.dp, Color(0xFFCBD5E1))
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
+            Text(
+                text = "✓ $title",
+                fontFamily = roboto,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 13.sp,
+                color = Color(0xFF1E3A8A)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = desc,
+                fontFamily = roboto,
+                fontWeight = FontWeight.Normal,
+                fontSize = 12.sp,
+                color = Color(0xFF475569),
+                lineHeight = 16.sp
+            )
         }
     }
 }
@@ -1347,7 +1529,12 @@ fun CreateJobDialog(
     var roleTitle by remember { mutableStateOf("") }
     var shopName by remember { mutableStateOf("") }
     var salary by remember { mutableStateOf("") }
+    var education by remember { mutableStateOf("") }
+    var experience by remember { mutableStateOf("") }
+    var jobTime by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
+    var aboutJob by remember { mutableStateOf("") }
+    var interviewerName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var gstNumber by remember { mutableStateOf("") }
     var errorMsg by remember { mutableStateOf("") }
@@ -1387,35 +1574,70 @@ fun CreateJobDialog(
                 OutlinedTextField(
                     value = roleTitle,
                     onValueChange = { roleTitle = it },
-                    label = { Text("Job Role (e.g., Salesman)", fontFamily = roboto) },
+                    label = { Text("Job Role (e.g., Sales Executive)", fontFamily = roboto) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = shopName,
                     onValueChange = { shopName = it },
-                    label = { Text("Shop / Company Name", fontFamily = roboto) },
+                    label = { Text("Business / Shop Name", fontFamily = roboto) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = salary,
                     onValueChange = { salary = it },
-                    label = { Text("Monthly Salary (e.g., ₹12,000)", fontFamily = roboto) },
+                    label = { Text("Monthly Salary", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = education,
+                    onValueChange = { education = it },
+                    label = { Text("Education Required", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = experience,
+                    onValueChange = { experience = it },
+                    label = { Text("Experience Required", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = jobTime,
+                    onValueChange = { jobTime = it },
+                    label = { Text("Job Timing (e.g., 9 AM - 8 PM)", fontFamily = roboto) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
-                    label = { Text("Shop Address", fontFamily = roboto) },
+                    label = { Text("Full Address", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = aboutJob,
+                    onValueChange = { aboutJob = it },
+                    label = { Text("About Job Responsibilities", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = interviewerName,
+                    onValueChange = { interviewerName = it },
+                    label = { Text("Interviewer / Contact Person", fontFamily = roboto) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Mobile Number", fontFamily = roboto) },
+                    label = { Text("Interviewer Mobile Number", fontFamily = roboto) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1445,8 +1667,13 @@ fun CreateJobDialog(
                                     roleTitle = roleTitle.trim(),
                                     shopName = shopName.trim(),
                                     salary = if (salary.isBlank()) "Negotiable" else salary.trim(),
-                                    address = if (address.isBlank()) "Savarkundla" else address.trim(),
-                                    phone = phone.trim(),
+                                    education = if (education.isBlank()) "Open for All" else education.trim(),
+                                    experience = if (experience.isBlank()) "Freshers Welcome" else experience.trim(),
+                                    jobTime = if (jobTime.isBlank()) "Full Time" else jobTime.trim(),
+                                    fullAddress = if (address.isBlank()) "Savarkundla" else address.trim(),
+                                    aboutJob = if (aboutJob.isBlank()) "General store and counter duties." else aboutJob.trim(),
+                                    interviewerName = if (interviewerName.isBlank()) "Manager" else interviewerName.trim(),
+                                    interviewerNumber = phone.trim(),
                                     gstNumber = gstNumber.trim()
                                 )
                             )
