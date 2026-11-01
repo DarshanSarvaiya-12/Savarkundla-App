@@ -1,4 +1,4 @@
-// Why we use this: Enables Android, Kotlin, Compose, and Google Services plugins.
+// Why we use this: Enables Android app building, Kotlin Compose, and Google Services.
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -32,7 +32,7 @@ android {
     }
 }
 
-// Why we use this: Installs Jetpack Compose, Coil, and Firebase Firestore using Firebase BOM.
+// Why we use this: Includes Firebase Firestore for live cloud data sync.
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
     implementation(composeBom)
@@ -44,8 +44,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("io.coil-kt:coil-compose:2.7.0")
 
-    // Why we use this: Firebase BOM and Cloud Firestore for live database fetching.
-    val firebaseBom = platform("com.google.firebase:firebase-bom:33.7.0")
-    implementation(firebaseBom)
+    // Firebase BOM and Cloud Firestore
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-firestore-ktx")
 }
