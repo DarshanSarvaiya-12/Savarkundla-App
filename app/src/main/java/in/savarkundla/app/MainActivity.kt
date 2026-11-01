@@ -1,6 +1,6 @@
 package `in`.savarkundla.app
 
-// Why we use this: Imports Android tools, Compose UI, animations, Coil, and Firebase Firestore.
+// Why we use this: Imports Android intents, Compose UI, Firebase Firestore, and Coil.
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -49,25 +49,24 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
-import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 
-// Why we use this: Model for Firestore Shops with default empty values for automatic parsing.
+// Why we use this: Blueprint mapping directly to Firebase Firestore "Shops" collection documents.
 data class ShopItem(
     val id: String = "",
     val name: String = "",
     val shopType: String = "",
     val shortAddress: String = "",
     val reviewCount: Int = 0,
-    val rating: Double = 0.0,
+    val rating: Double = 4.5,
     val imageUrl: String = "",
     val itemsSold: String = "",
     val phone: String = "",
     val isActive: Boolean = true
 )
 
-// Why we use this: Holds data for each job card on the Jobs page (to be connected in next step).
+// Why we use this: Holds data for each job card on the Jobs page.
 data class JobPost(
     val id: String = "",
     val roleTitle: String = "",
@@ -83,13 +82,12 @@ data class JobPost(
     val gstNumber: String = ""
 )
 
-// Why we use this: Initializes Firebase and launches the Compose UI without an Android title bar.
+// Why we use this: Hides the system title bar and launches the Compose application.
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         actionBar?.hide()
-        FirebaseApp.initializeApp(this)
         setContent {
             SavarkundlaTheme {
                 SavarkundlaRoot()
@@ -228,7 +226,7 @@ fun CompactCornerBadge(
     }
 }
 
-// Why we use this: Live Home section connected to Firebase Firestore with realtime updates.
+// Why we use this: Manages Firebase live sync, Home/Job navigation, and dialogs.
 @Composable
 fun SavarkundlaRoot() {
     val logoFont = rememberLogoFont()
@@ -248,56 +246,45 @@ fun SavarkundlaRoot() {
     var showAddShopModal by remember { mutableStateOf(false) }
     var showCreateJobModal by remember { mutableStateOf(false) }
 
-    // Why we use this: State holding live shops retrieved from Firebase Firestore.
-    val shopList = remember { mutableStateListOf<ShopItem>() }
-    var isShopsLoading by remember { mutableStateOf(true) }
+    // Why we use this: Live state that receives real-time updates from Firebase Firestore.
+    var shopList by remember { mutableStateOf<List<ShopItem>>(emptyList()) }
+    var isLoadingShops by remember { mutableStateOf(true) }
 
-    // Why we use this: Realtime Firestore snapshot listener for the "Shops" collection.
+    // Why we use this: Real-time listener connecting to Firebase Firestore "Shops" collection.
     LaunchedEffect(Unit) {
         try {
             val firestore = FirebaseFirestore.getInstance()
             firestore.collection("Shops")
                 .addSnapshotListener { snapshot, error ->
-                    isShopsLoading = false
+                    isLoadingShops = false
                     if (error != null) {
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {
-                        shopList.clear()
-                        for (doc in snapshot.documents) {
-                            val id = doc.id
-                            val name = doc.getString("name") ?: ""
-                            val shopType = doc.getString("shopType") ?: ""
-                            val shortAddress = doc.getString("shortAddress") ?: ""
-                            val itemsSold = doc.getString("itemsSold") ?: ""
-                            val phone = doc.getString("phone") ?: ""
-                            val imageUrl = doc.getString("imageUrl") ?: ""
-                            val rating = doc.getDouble("rating") ?: 4.5
-                            val reviewCount = doc.getLong("reviewCount")?.toInt() ?: 100
-                            val isActive = doc.getBoolean("isActive") ?: true
-
-                            // Why we use this: Shows only active, subscribed shops in Savarkundla.
-                            if (isActive) {
-                                shopList.add(
-                                    ShopItem(
-                                        id = id,
-                                        name = name,
-                                        shopType = shopType,
-                                        shortAddress = shortAddress,
-                                        reviewCount = reviewCount,
-                                        rating = rating,
-                                        imageUrl = imageUrl,
-                                        itemsSold = itemsSold,
-                                        phone = phone,
-                                        isActive = isActive
-                                    )
+                        val fetched = snapshot.documents.mapNotNull { doc ->
+                            try {
+                                ShopItem(
+                                    id = doc.id,
+                                    name = doc.getString("name") ?: "",
+                                    shopType = doc.getString("shopType") ?: "General",
+                                    shortAddress = doc.getString("shortAddress") ?: "",
+                                    reviewCount = doc.getLong("reviewCount")?.toInt() ?: 0,
+                                    rating = doc.getDouble("rating") ?: 4.5,
+                                    imageUrl = doc.getString("imageUrl") ?: "",
+                                    itemsSold = doc.getString("itemsSold") ?: "",
+                                    phone = doc.getString("phone") ?: "",
+                                    isActive = doc.getBoolean("isActive") ?: true
                                 )
+                            } catch (e: Exception) {
+                                null
                             }
                         }
+                        // Only display active shops (whose subscription is valid)
+                        shopList = fetched.filter { it.isActive }
                     }
                 }
         } catch (e: Exception) {
-            isShopsLoading = false
+            isLoadingShops = false
         }
     }
 
@@ -314,17 +301,7 @@ fun SavarkundlaRoot() {
         }
     }
 
-    // Dynamic category list derived from Firestore plus standard defaults
-    val categories = remember(shopList.size) {
-        val uniqueTypes = shopList.map { it.shopType }.filter { it.isNotBlank() }.distinct()
-        val base = mutableListOf("All")
-        if (uniqueTypes.isNotEmpty()) {
-            base.addAll(uniqueTypes)
-        } else {
-            base.addAll(listOf("Electronics", "Clothing", "Grocery", "Hardware & Scales", "Medical", "Food"))
-        }
-        base.distinct()
-    }
+    val categories = listOf("All", "Electronics", "Clothing", "Grocery", "Hardware & Scales", "Medical", "Food")
 
     val jobList = remember {
         mutableStateListOf(
@@ -355,20 +332,6 @@ fun SavarkundlaRoot() {
                 interviewerName = "Hareshbhai Dholakia",
                 interviewerNumber = "9876543213",
                 gstNumber = "24BBCSP5678G1Z2"
-            ),
-            JobPost(
-                id = "3",
-                roleTitle = "Scale Assembly Technician",
-                shopName = "Kundla Weighing Scales & Hardware",
-                salary = "₹14,000 - ₹18,000 / month",
-                education = "ITI / Technical Background",
-                experience = "2+ Years Hardware Experience",
-                jobTime = "9:00 AM - 7:30 PM",
-                fullAddress = "Navapara, Main Bazaar, Savarkundla",
-                aboutJob = "Assembling digital load cells, manual weights testing, calibration and delivery checks.",
-                interviewerName = "Mansukhbhai Chauhan",
-                interviewerNumber = "9876543210",
-                gstNumber = "24CCDKW9012H1Z9"
             )
         )
     }
@@ -580,8 +543,8 @@ fun SavarkundlaRoot() {
                     )
                 }
 
-                // Why we use this: Shows a smooth loading circle while Firestore fetches shops.
-                if (isShopsLoading) {
+                // Why we use this: Shows a loading indicator while Firestore data is fetching.
+                if (isLoadingShops) {
                     item {
                         Box(
                             modifier = Modifier
@@ -597,13 +560,13 @@ fun SavarkundlaRoot() {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 40.dp),
+                                .padding(vertical = 30.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No shops found matching your search.",
+                                text = "No shops found. Add the first shop from Firestore!",
                                 fontFamily = roboto,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 color = Color(0xFF64748B)
                             )
@@ -1078,7 +1041,7 @@ fun ShopDetailPage(
     }
 }
 
-// Why we use this: Job Card with dark blue prefixes (Job : , At : , Sal : ), three separator lines, and slightly decreased text weight.
+// Why we use this: Job Card with dark blue prefixes (Job : , At : , Sal : ) and three separator lines.
 @Composable
 fun JobPostCard(
     job: JobPost,
@@ -1226,7 +1189,7 @@ fun JobPostCard(
     }
 }
 
-// Why we use this: Curved-corner rectangle Job Popup matching Job Card width.
+// Why we use this: Curved-corner rectangle Job Popup matching Job Card width and highlighted fields.
 @Composable
 fun CompactJobCardPopup(
     job: JobPost,
@@ -1284,20 +1247,8 @@ fun CompactJobCardPopup(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    PopupLineRow(
-                        prefix = "Job : ",
-                        value = job.roleTitle,
-                        roboto = roboto,
-                        isJobNameHighlight = true
-                    )
-
-                    PopupLineRow(
-                        prefix = "Business : ",
-                        value = job.shopName,
-                        roboto = roboto,
-                        isBusinessHighlight = true
-                    )
-
+                    PopupLineRow(prefix = "Job : ", value = job.roleTitle, roboto = roboto, isJobNameHighlight = true)
+                    PopupLineRow(prefix = "Business : ", value = job.shopName, roboto = roboto, isBusinessHighlight = true)
                     PopupLineRow(prefix = "Sal : ", value = job.salary, roboto = roboto)
                     PopupLineRow(prefix = "Edu : ", value = job.education, roboto = roboto)
                     PopupLineRow(prefix = "Exp : ", value = job.experience, roboto = roboto)
@@ -1324,7 +1275,7 @@ fun CompactJobCardPopup(
     }
 }
 
-// Why we use this: Formats single popup lines with dark blue prefix, thin separator line, and specific highlight styles.
+// Why we use this: Formats single popup lines with dark blue prefix and thin separator lines.
 @Composable
 fun PopupLineRow(
     prefix: String,
