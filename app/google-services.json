@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "333682900345",
-    "project_id": "my-shop-android-app",
-    "storage_bucket": "my-shop-android-app.firebasestorage.app"
+    "project_number": "64840202940",
+    "project_id": "savarkundla-app",
+    "storage_bucket": "savarkundla-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:333682900345:android:eac29892a9ea2b3cd803a8",
+        "mobilesdk_app_id": "1:64840202940:android:14404bc4bd3df414406eb9",
         "android_client_info": {
           "package_name": "in.savarkundla.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCYNJt9QUwVW82j5-2v-UumQ4_mdlben5o"
+          "current_key": "AIzaSyDsKJ4wLKFmNr0FvKBAXsCJIRNY-BLFU90"
         }
       ],
       "services": {
