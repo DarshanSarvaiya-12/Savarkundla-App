@@ -1,6 +1,6 @@
 package `in`.savarkundla.app
 
-// Why we use this: Imports Android intents, voice recognition, Compose UI, animations, and Coil.
+// Why we use this: Imports Android tools, Compose UI, animations, Coil, and Firebase Firestore.
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -49,22 +49,25 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 
-// Why we use this: Holds data for each shop card and full shop page.
+// Why we use this: Model for Firestore Shops with default empty values for automatic parsing.
 data class ShopItem(
     val id: String = "",
     val name: String = "",
     val shopType: String = "",
     val shortAddress: String = "",
-    val reviewCount: Int = 132,
-    val rating: Double = 4.2,
+    val reviewCount: Int = 0,
+    val rating: Double = 0.0,
     val imageUrl: String = "",
     val itemsSold: String = "",
-    val phone: String = ""
+    val phone: String = "",
+    val isActive: Boolean = true
 )
 
-// Why we use this: Holds comprehensive data for Job Cards and the Job Popup.
+// Why we use this: Holds data for each job card on the Jobs page (to be connected in next step).
 data class JobPost(
     val id: String = "",
     val roleTitle: String = "",
@@ -80,12 +83,13 @@ data class JobPost(
     val gstNumber: String = ""
 )
 
-// Why we use this: Hides the system title bar and launches the Compose application.
+// Why we use this: Initializes Firebase and launches the Compose UI without an Android title bar.
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         actionBar?.hide()
+        FirebaseApp.initializeApp(this)
         setContent {
             SavarkundlaTheme {
                 SavarkundlaRoot()
@@ -155,9 +159,9 @@ fun rememberRgbAnimation(): Brush {
 // Why we use this: Premium Black & Sky-Blue gradient for Shop buttons.
 val premiumBlackSkyBlueBrush = Brush.horizontalGradient(
     colors = listOf(
-        Color(0xFF030712), // Deep obsidian black
-        Color(0xFF075985), // Rich sky-blue tone
-        Color(0xFF38BDF8)  // Bright sky-blue accent
+        Color(0xFF030712),
+        Color(0xFF075985),
+        Color(0xFF38BDF8)
     )
 )
 
@@ -224,7 +228,7 @@ fun CompactCornerBadge(
     }
 }
 
-// Why we use this: Manages navigation, preserves Home scroll state, and controls dialogs.
+// Why we use this: Live Home section connected to Firebase Firestore with realtime updates.
 @Composable
 fun SavarkundlaRoot() {
     val logoFont = rememberLogoFont()
@@ -244,6 +248,59 @@ fun SavarkundlaRoot() {
     var showAddShopModal by remember { mutableStateOf(false) }
     var showCreateJobModal by remember { mutableStateOf(false) }
 
+    // Why we use this: State holding live shops retrieved from Firebase Firestore.
+    val shopList = remember { mutableStateListOf<ShopItem>() }
+    var isShopsLoading by remember { mutableStateOf(true) }
+
+    // Why we use this: Realtime Firestore snapshot listener for the "Shops" collection.
+    LaunchedEffect(Unit) {
+        try {
+            val firestore = FirebaseFirestore.getInstance()
+            firestore.collection("Shops")
+                .addSnapshotListener { snapshot, error ->
+                    isShopsLoading = false
+                    if (error != null) {
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        shopList.clear()
+                        for (doc in snapshot.documents) {
+                            val id = doc.id
+                            val name = doc.getString("name") ?: ""
+                            val shopType = doc.getString("shopType") ?: ""
+                            val shortAddress = doc.getString("shortAddress") ?: ""
+                            val itemsSold = doc.getString("itemsSold") ?: ""
+                            val phone = doc.getString("phone") ?: ""
+                            val imageUrl = doc.getString("imageUrl") ?: ""
+                            val rating = doc.getDouble("rating") ?: 4.5
+                            val reviewCount = doc.getLong("reviewCount")?.toInt() ?: 100
+                            val isActive = doc.getBoolean("isActive") ?: true
+
+                            // Why we use this: Shows only active, subscribed shops in Savarkundla.
+                            if (isActive) {
+                                shopList.add(
+                                    ShopItem(
+                                        id = id,
+                                        name = name,
+                                        shopType = shopType,
+                                        shortAddress = shortAddress,
+                                        reviewCount = reviewCount,
+                                        rating = rating,
+                                        imageUrl = imageUrl,
+                                        itemsSold = itemsSold,
+                                        phone = phone,
+                                        isActive = isActive
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+        } catch (e: Exception) {
+            isShopsLoading = false
+        }
+    }
+
     BackHandler(enabled = selectedShop != null) {
         selectedShop = null
     }
@@ -257,55 +314,16 @@ fun SavarkundlaRoot() {
         }
     }
 
-    val categories = listOf("All", "Electronics", "Clothing", "Grocery", "Hardware & Scales", "Medical", "Food")
-
-    val shopList = remember {
-        listOf(
-            ShopItem(
-                id = "1",
-                name = "Kundla Weighing Scales & Hardware",
-                shopType = "Hardware & Scales",
-                shortAddress = "Navapara, Main Bazaar",
-                reviewCount = 132,
-                rating = 4.2,
-                imageUrl = "https://images.unsplash.com/photo-1581783898377-1c85bf937427?w=800&q=80",
-                itemsSold = "Digital scales, industrial weights, iron tools, hardware items",
-                phone = "9876543210"
-            ),
-            ShopItem(
-                id = "2",
-                name = "Patel Electronics & Mobile",
-                shopType = "Electronics",
-                shortAddress = "Jeshar Road, Near Bus Stand",
-                reviewCount = 218,
-                rating = 4.8,
-                imageUrl = "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800&q=80",
-                itemsSold = "iPhones, Samsung phones, Smart TVs, AC, Refrigerators, washing machines",
-                phone = "9876543211"
-            ),
-            ShopItem(
-                id = "3",
-                name = "Shreeji Fashion Hub",
-                shopType = "Clothing",
-                shortAddress = "Ridhhi Siddhi Complex, Mahuva Rd",
-                reviewCount = 96,
-                rating = 4.7,
-                imageUrl = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80",
-                itemsSold = "Men's wear, jeans, shirts, wedding sherwani, sarees, kids wear",
-                phone = "9876543212"
-            ),
-            ShopItem(
-                id = "4",
-                name = "Bapa Sitaram Supermart",
-                shopType = "Grocery",
-                shortAddress = "Amreli Road, Savarkundla",
-                reviewCount = 310,
-                rating = 4.9,
-                imageUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80",
-                itemsSold = "Atta, spices, dry fruits, cold drinks, daily groceries",
-                phone = "9876543213"
-            )
-        )
+    // Dynamic category list derived from Firestore plus standard defaults
+    val categories = remember(shopList.size) {
+        val uniqueTypes = shopList.map { it.shopType }.filter { it.isNotBlank() }.distinct()
+        val base = mutableListOf("All")
+        if (uniqueTypes.isNotEmpty()) {
+            base.addAll(uniqueTypes)
+        } else {
+            base.addAll(listOf("Electronics", "Clothing", "Grocery", "Hardware & Scales", "Medical", "Food"))
+        }
+        base.distinct()
     }
 
     val jobList = remember {
@@ -562,13 +580,44 @@ fun SavarkundlaRoot() {
                     )
                 }
 
-                items(visibleShops, key = { it.id }) { shop ->
-                    Box(modifier = Modifier.padding(horizontal = 10.dp)) {
-                        ShopItemCard(
-                            shop = shop,
-                            roboto = roboto,
-                            onOpenShop = { selectedShop = it }
-                        )
+                // Why we use this: Shows a smooth loading circle while Firestore fetches shops.
+                if (isShopsLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF1E3A8A))
+                        }
+                    }
+                } else if (visibleShops.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No shops found matching your search.",
+                                fontFamily = roboto,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+                } else {
+                    items(visibleShops, key = { it.id }) { shop ->
+                        Box(modifier = Modifier.padding(horizontal = 10.dp)) {
+                            ShopItemCard(
+                                shop = shop,
+                                roboto = roboto,
+                                onOpenShop = { selectedShop = it }
+                            )
+                        }
                     }
                 }
 
@@ -630,7 +679,6 @@ fun SavarkundlaRoot() {
         )
     }
 
-    // Why we use this: Curved-corner rectangle Job Popup matching Job Card width, with no GST badge or WhatsApp button.
     if (selectedJob != null) {
         CompactJobCardPopup(
             job = selectedJob!!,
@@ -780,7 +828,7 @@ fun BottomBarNavigation(currentPage: String, roboto: FontFamily, onSelectPage: (
     }
 }
 
-// Why we use this: Shop Card featuring blue text for name & address and premium black & sky-blue gradient buttons with bottom-aligned text.
+// Why we use this: Shop Card featuring blue text for name & address and premium black & sky-blue gradient buttons.
 @Composable
 fun ShopItemCard(
     shop: ShopItem,
@@ -822,7 +870,6 @@ fun ShopItemCard(
             }
 
             Column(modifier = Modifier.padding(14.dp)) {
-                // Why we use this: Shop Name in signature Blue.
                 Text(
                     text = shop.name,
                     fontFamily = roboto,
@@ -837,7 +884,6 @@ fun ShopItemCard(
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Why we use this: Short Address in Blue font with clear semi-bold weight.
                 Text(
                     text = shop.shortAddress,
                     fontFamily = roboto,
@@ -852,7 +898,6 @@ fun ShopItemCard(
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Why we use this: Premium Black & Sky-Blue gradient buttons with text near the bottom line.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1051,7 +1096,6 @@ fun JobPostCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Why we use this: GST Number Badge flush at the upper right corner.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -1072,11 +1116,9 @@ fun JobPostCard(
                 }
             }
 
-            // Why we use this: Gap between upper-right GST badge and Job Name.
             Spacer(modifier = Modifier.height(10.dp))
 
             Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                // Line 1: Job : <Job Role>
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Job : ",
@@ -1096,12 +1138,10 @@ fun JobPostCard(
                     )
                 }
 
-                // Separator Line 1
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Line 2: At : <Business Name>
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "At : ",
@@ -1121,12 +1161,10 @@ fun JobPostCard(
                     )
                 }
 
-                // Separator Line 2
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Line 3: Sal : <Salary>
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Sal : ",
@@ -1146,12 +1184,10 @@ fun JobPostCard(
                     )
                 }
 
-                // Separator Line 3
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(thickness = 0.6.dp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Why we use this: View and Apply buttons.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1190,7 +1226,7 @@ fun JobPostCard(
     }
 }
 
-// Why we use this: Curved-corner rectangle Job Popup with width matching the Job Card, slightly less height, highlighted Job & Business name, and no GST badge / WhatsApp button.
+// Why we use this: Curved-corner rectangle Job Popup matching Job Card width.
 @Composable
 fun CompactJobCardPopup(
     job: JobPost,
@@ -1208,15 +1244,14 @@ fun CompactJobCardPopup(
             shadowElevation = 8.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp) // Exactly matches the horizontal padding of Job Card
-                .heightIn(max = 480.dp)     // Slightly less height
+                .padding(horizontal = 10.dp)
+                .heightIn(max = 480.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1243,14 +1278,12 @@ fun CompactJobCardPopup(
                 HorizontalDivider(thickness = 1.2.dp, color = Color(0xFF1E3A8A))
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Scrollable Content
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // Highlighted Job Name
                     PopupLineRow(
                         prefix = "Job : ",
                         value = job.roleTitle,
@@ -1258,7 +1291,6 @@ fun CompactJobCardPopup(
                         isJobNameHighlight = true
                     )
 
-                    // Highlighted Business Name
                     PopupLineRow(
                         prefix = "Business : ",
                         value = job.shopName,
@@ -1279,7 +1311,6 @@ fun CompactJobCardPopup(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Close Button
                 Button(
                     onClick = onDismiss,
                     shape = RoundedCornerShape(10.dp),
