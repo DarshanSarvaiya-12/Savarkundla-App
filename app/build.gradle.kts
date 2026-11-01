@@ -1,18 +1,11 @@
-// ============================================================================
-// WHY WE USE THIS SECTION: GRADLE PLUGINS
-// Tells Gradle to build an Android App using Kotlin and Jetpack Compose UI.
-// ============================================================================
+// Why we use this: Enables Android, Kotlin, Compose, and Google Services plugins.
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
-// ============================================================================
-// WHY WE USE THIS SECTION: ANDROID APP SETTINGS
-// Sets your unique app ID (in.savarkundla.app), minimum supported Android
-// version (Android 7.0+), and Java 17 compatibility for Codemagic.
-// ============================================================================
 android {
     namespace = "in.savarkundla.app"
     compileSdk = 35
@@ -39,11 +32,7 @@ android {
     }
 }
 
-// ============================================================================
-// WHY WE USE THIS SECTION: EXTERNAL LIBRARIES (DEPENDENCIES)
-// Downloads Material 3 UI components, extended icons (WhatsApp/Filter/Star),
-// and Coil (coil-compose) so Shop Cards can load shop photos from the web.
-// ============================================================================
+// Why we use this: Installs Jetpack Compose, Coil, and Firebase Firestore using Firebase BOM.
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
     implementation(composeBom)
@@ -54,4 +43,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Why we use this: Firebase BOM and Cloud Firestore for live database fetching.
+    val firebaseBom = platform("com.google.firebase:firebase-bom:33.7.0")
+    implementation(firebaseBom)
+    implementation("com.google.firebase:firebase-firestore-ktx")
 }
