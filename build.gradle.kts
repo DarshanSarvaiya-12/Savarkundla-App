@@ -1,4 +1,4 @@
-// Why we use this: Declares core Android, Kotlin, Compose, and Google Services build plugins.
+// Why we use this: Tells Gradle to include Google Services and Kotlin plugins.
 plugins {
     id("com.android.application") version "8.7.3" apply false
     id("org.jetbrains.kotlin.android") version "2.0.21" apply false
