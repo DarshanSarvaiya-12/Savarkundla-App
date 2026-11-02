@@ -1,12 +1,14 @@
 package `in`.savarkundla.app
 
-// Why we use this: Imports Android intents, Compose UI, Firebase Firestore, and Coil.
+// Why we use this
+// Imports Android intents, activity result launchers, Firebase Firestore, and Firebase Storage.
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.view.Window
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -50,9 +52,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.delay
+import java.util.UUID
 
-// Why we use this: Blueprint mapping directly to Firebase Firestore "Shops" collection documents.
+// Why we use this
+// Blueprint mapping directly to Firebase Firestore "Shops" collection documents.
 data class ShopItem(
     val id: String = "",
     val name: String = "",
@@ -66,7 +71,8 @@ data class ShopItem(
     val isActive: Boolean = true
 )
 
-// Why we use this: Holds data for each job card on the Jobs page.
+// Why we use this
+// Blueprint mapping directly to Firebase Firestore "Jobs" collection documents.
 data class JobPost(
     val id: String = "",
     val roleTitle: String = "",
@@ -76,13 +82,15 @@ data class JobPost(
     val experience: String = "Freshers & Experienced",
     val jobTime: String = "9:00 AM - 8:00 PM",
     val fullAddress: String = "Main Market, Savarkundla",
-    val aboutJob: String = "Handling customer inquiries, inventory maintenance, and counter sales management.",
-    val interviewerName: String = "Owner / HR Manager",
-    val interviewerNumber: String = "9876543210",
-    val gstNumber: String = ""
+    val aboutJob: String = "Counter sales and general store management.",
+    val interviewerName: String = "Manager",
+    val interviewerNumber: String = "",
+    val gstNumber: String = "",
+    val isActive: Boolean = true
 )
 
-// Why we use this: Hides the system title bar and launches the Compose application.
+// Why we use this
+// Hides system title bar and launches the app UI.
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -96,7 +104,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Why we use this: Loads Bricolage Grotesque from res/font for the logo and tagline.
+// Why we use this
+// Loads Bricolage Grotesque font for logo and headers.
 @Composable
 fun rememberLogoFont(): FontFamily {
     val context = LocalContext.current
@@ -106,7 +115,8 @@ fun rememberLogoFont(): FontFamily {
     }
 }
 
-// Why we use this: Loads Roboto font files so the app ignores the phone's default font.
+// Why we use this
+// Loads Roboto font family across the app.
 @Composable
 fun rememberAppRobotoFont(): FontFamily {
     val context = LocalContext.current
@@ -126,7 +136,8 @@ fun rememberAppRobotoFont(): FontFamily {
     }
 }
 
-// Why we use this: Generates the moving RGB border animation for Search and Mic buttons.
+// Why we use this
+// Generates the moving RGB border animation for Search and Mic buttons.
 @Composable
 fun rememberRgbAnimation(): Brush {
     val transition = rememberInfiniteTransition(label = "rgb")
@@ -154,7 +165,8 @@ fun rememberRgbAnimation(): Brush {
     )
 }
 
-// Why we use this: Premium Black & Sky-Blue gradient for Shop buttons.
+// Why we use this
+// Premium Black & Sky-Blue gradient for Shop buttons.
 val premiumBlackSkyBlueBrush = Brush.horizontalGradient(
     colors = listOf(
         Color(0xFF030712),
@@ -163,7 +175,8 @@ val premiumBlackSkyBlueBrush = Brush.horizontalGradient(
     )
 )
 
-// Why we use this: Sets Roboto as the global font across all screens and dialogs.
+// Why we use this
+// Sets Roboto as the global font.
 @Composable
 fun SavarkundlaTheme(content: @Composable () -> Unit) {
     val roboto = rememberAppRobotoFont()
@@ -181,7 +194,8 @@ fun SavarkundlaTheme(content: @Composable () -> Unit) {
     }
 }
 
-// Why we use this: Animates between Review and Shop Type inside a compact badge flush with the top-right.
+// Why we use this
+// Animates between Review and Shop Type inside a compact upper-right corner badge.
 @Composable
 fun CompactCornerBadge(
     rating: Double,
@@ -226,7 +240,8 @@ fun CompactCornerBadge(
     }
 }
 
-// Why we use this: Manages Firebase live sync, Home/Job navigation, and dialogs.
+// Why we use this
+// Coordinates live Firestore synchronization for both Shops and Jobs sections.
 @Composable
 fun SavarkundlaRoot() {
     val logoFont = rememberLogoFont()
@@ -246,21 +261,22 @@ fun SavarkundlaRoot() {
     var showAddShopModal by remember { mutableStateOf(false) }
     var showCreateJobModal by remember { mutableStateOf(false) }
 
-    // Why we use this: Live state that receives real-time updates from Firebase Firestore.
+    // Live state from Firebase Firestore
     var shopList by remember { mutableStateOf<List<ShopItem>>(emptyList()) }
     var isLoadingShops by remember { mutableStateOf(true) }
 
-    // Why we use this: Real-time listener connecting to Firebase Firestore "Shops" collection.
+    var jobList by remember { mutableStateOf<List<JobPost>>(emptyList()) }
+    var isLoadingJobs by remember { mutableStateOf(true) }
+
+    // Why we use this
+    // Real-time listener for Firestore "Shops" collection.
     LaunchedEffect(Unit) {
         try {
             val firestore = FirebaseFirestore.getInstance()
             firestore.collection("Shops")
                 .addSnapshotListener { snapshot, error ->
                     isLoadingShops = false
-                    if (error != null) {
-                        return@addSnapshotListener
-                    }
-                    if (snapshot != null) {
+                    if (error == null && snapshot != null) {
                         val fetched = snapshot.documents.mapNotNull { doc ->
                             try {
                                 ShopItem(
@@ -279,12 +295,49 @@ fun SavarkundlaRoot() {
                                 null
                             }
                         }
-                        // Only display active shops (whose subscription is valid)
                         shopList = fetched.filter { it.isActive }
                     }
                 }
         } catch (e: Exception) {
             isLoadingShops = false
+        }
+    }
+
+    // Why we use this
+    // Real-time listener for Firestore "Jobs" collection.
+    LaunchedEffect(Unit) {
+        try {
+            val firestore = FirebaseFirestore.getInstance()
+            firestore.collection("Jobs")
+                .addSnapshotListener { snapshot, error ->
+                    isLoadingJobs = false
+                    if (error == null && snapshot != null) {
+                        val fetchedJobs = snapshot.documents.mapNotNull { doc ->
+                            try {
+                                JobPost(
+                                    id = doc.id,
+                                    roleTitle = doc.getString("roleTitle") ?: "",
+                                    shopName = doc.getString("shopName") ?: "",
+                                    salary = doc.getString("salary") ?: "",
+                                    education = doc.getString("education") ?: "10th / 12th / Graduate",
+                                    experience = doc.getString("experience") ?: "Freshers & Experienced",
+                                    jobTime = doc.getString("jobTime") ?: "9:00 AM - 8:00 PM",
+                                    fullAddress = doc.getString("fullAddress") ?: "Savarkundla",
+                                    aboutJob = doc.getString("aboutJob") ?: "Counter sales & service",
+                                    interviewerName = doc.getString("interviewerName") ?: "Manager",
+                                    interviewerNumber = doc.getString("interviewerNumber") ?: "",
+                                    gstNumber = doc.getString("gstNumber") ?: "",
+                                    isActive = doc.getBoolean("isActive") ?: true
+                                )
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        jobList = fetchedJobs.filter { it.isActive }
+                    }
+                }
+        } catch (e: Exception) {
+            isLoadingJobs = false
         }
     }
 
@@ -302,39 +355,6 @@ fun SavarkundlaRoot() {
     }
 
     val categories = listOf("All", "Electronics", "Clothing", "Grocery", "Hardware & Scales", "Medical", "Food")
-
-    val jobList = remember {
-        mutableStateListOf(
-            JobPost(
-                id = "1",
-                roleTitle = "Sells Exicutive",
-                shopName = "Patel Electronics & Mobile",
-                salary = "₹12,000 - ₹15,000 / month",
-                education = "12th Pass / Graduate",
-                experience = "Minimum 1 Year Retail",
-                jobTime = "9:30 AM - 8:30 PM",
-                fullAddress = "Shop No 4, Patel Complex, Jeshar Road, Savarkundla",
-                aboutJob = "Responsible for customer greetings, smartphone demonstrations, and sales billing.",
-                interviewerName = "Rajeshbhai Patel",
-                interviewerNumber = "9876543211",
-                gstNumber = "24AABCP1234F1Z5"
-            ),
-            JobPost(
-                id = "2",
-                roleTitle = "Billing & Computer Operator",
-                shopName = "Bapa Sitaram Supermart",
-                salary = "₹10,000 - ₹13,000 / month",
-                education = "10th / 12th Pass",
-                experience = "Freshers Welcome",
-                jobTime = "8:00 AM - 7:00 PM",
-                fullAddress = "Near Gayatri Temple, Amreli Road, Savarkundla",
-                aboutJob = "Operating barcode billing system, cash handling, and daily grocery stock registers.",
-                interviewerName = "Hareshbhai Dholakia",
-                interviewerNumber = "9876543213",
-                gstNumber = "24BBCSP5678G1Z2"
-            )
-        )
-    }
 
     val visibleShops = shopList.filter { s ->
         val catOk = activeCategory == "All" || s.shopType == activeCategory
@@ -543,7 +563,6 @@ fun SavarkundlaRoot() {
                     )
                 }
 
-                // Why we use this: Shows a loading indicator while Firestore data is fetching.
                 if (isLoadingShops) {
                     item {
                         Box(
@@ -564,7 +583,7 @@ fun SavarkundlaRoot() {
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No shops found. Add the first shop from Firestore!",
+                                text = "No active shops found in database.",
                                 fontFamily = roboto,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
@@ -612,13 +631,43 @@ fun SavarkundlaRoot() {
                     )
                 }
 
-                items(jobList, key = { it.id }) { job ->
-                    Box(modifier = Modifier.padding(horizontal = 10.dp)) {
-                        JobPostCard(
-                            job = job,
-                            roboto = roboto,
-                            onViewJob = { selectedJob = it }
-                        )
+                if (isLoadingJobs) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF1E3A8A))
+                        }
+                    }
+                } else if (jobList.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 30.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No jobs posted yet. Be the first to create one!",
+                                fontFamily = roboto,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+                } else {
+                    items(jobList, key = { it.id }) { job ->
+                        Box(modifier = Modifier.padding(horizontal = 10.dp)) {
+                            JobPostCard(
+                                job = job,
+                                roboto = roboto,
+                                onViewJob = { selectedJob = it }
+                            )
+                        }
                     }
                 }
 
@@ -651,7 +700,7 @@ fun SavarkundlaRoot() {
     }
 
     if (showAddShopModal) {
-        RedesignedAddShopDialog(
+        AddShopWithImageUploadDialog(
             roboto = roboto,
             onDismiss = { showAddShopModal = false }
         )
@@ -660,16 +709,13 @@ fun SavarkundlaRoot() {
     if (showCreateJobModal) {
         CreateJobDialog(
             roboto = roboto,
-            onDismiss = { showCreateJobModal = false },
-            onJobCreated = { newJob ->
-                jobList.add(0, newJob)
-                showCreateJobModal = false
-            }
+            onDismiss = { showCreateJobModal = false }
         )
     }
 }
 
-// Why we use this: Decreased height footer with white brand text.
+// Why we use this
+// Compact footer.
 @Composable
 fun AppFooter(roboto: FontFamily) {
     Spacer(modifier = Modifier.height(4.dp))
@@ -691,7 +737,8 @@ fun AppFooter(roboto: FontFamily) {
     }
 }
 
-// Why we use this: Renders the Savarkundla.in logo and navigates to Home when clicked.
+// Why we use this
+// Brand Logo.
 @Composable
 fun BrandLogo(logoFont: FontFamily, onClick: () -> Unit) {
     Text(
@@ -723,7 +770,8 @@ fun BrandLogo(logoFont: FontFamily, onClick: () -> Unit) {
     )
 }
 
-// Why we use this: Reusable 42x40.dp '+' icon button with blue border and blue '+' symbol.
+// Why we use this
+// Reusable '+' button.
 @Composable
 fun BluePlusButton(onClick: () -> Unit) {
     Box(
@@ -745,7 +793,8 @@ fun BluePlusButton(onClick: () -> Unit) {
     }
 }
 
-// Why we use this: Lower bar with Home and Jobs buttons so users can switch pages easily.
+// Why we use this
+// Bottom navigation bar.
 @Composable
 fun BottomBarNavigation(currentPage: String, roboto: FontFamily, onSelectPage: (String) -> Unit) {
     Surface(
@@ -791,7 +840,8 @@ fun BottomBarNavigation(currentPage: String, roboto: FontFamily, onSelectPage: (
     }
 }
 
-// Why we use this: Shop Card featuring blue text for name & address and premium black & sky-blue gradient buttons.
+// Why we use this
+// Shop Card displaying shop image directly loaded from Firebase Storage.
 @Composable
 fun ShopItemCard(
     shop: ShopItem,
@@ -896,7 +946,8 @@ fun ShopItemCard(
     }
 }
 
-// Why we use this: Renders buttons with Premium Black & Sky-Blue gradient with text near the bottom line.
+// Why we use this
+// Bottom-aligned button text.
 @Composable
 fun PremiumShopButton(
     text: String,
@@ -924,7 +975,8 @@ fun PremiumShopButton(
     }
 }
 
-// Why we use this: Full Shop Page without Back/Filter buttons (uses mobile back navigation).
+// Why we use this
+// Full Shop Page.
 @Composable
 fun ShopDetailPage(
     shop: ShopItem,
@@ -1041,7 +1093,8 @@ fun ShopDetailPage(
     }
 }
 
-// Why we use this: Job Card with dark blue prefixes (Job : , At : , Sal : ) and three separator lines.
+// Why we use this
+// Job Card displaying data directly synced from Firebase Firestore.
 @Composable
 fun JobPostCard(
     job: JobPost,
@@ -1189,7 +1242,8 @@ fun JobPostCard(
     }
 }
 
-// Why we use this: Curved-corner rectangle Job Popup matching Job Card width and highlighted fields.
+// Why we use this
+// Compact Job Details modal.
 @Composable
 fun CompactJobCardPopup(
     job: JobPost,
@@ -1275,7 +1329,8 @@ fun CompactJobCardPopup(
     }
 }
 
-// Why we use this: Formats single popup lines with dark blue prefix and thin separator lines.
+// Why we use this
+// Formats single popup lines.
 @Composable
 fun PopupLineRow(
     prefix: String,
@@ -1319,16 +1374,30 @@ fun PopupLineRow(
     }
 }
 
-// Why we use this: High-impact modal for Shop owners showing full ₹2,000/mo package.
+// Why we use this
+// Allows selecting and uploading shop images to Firebase Storage and saving them directly to Firestore.
 @Composable
-fun RedesignedAddShopDialog(
+fun AddShopWithImageUploadDialog(
     roboto: FontFamily,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    var shopName by remember { mutableStateOf("") }
+    var shopCategory by remember { mutableStateOf("Electronics") }
+    var address by remember { mutableStateOf("") }
+    var itemsSold by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isUploading by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isUploading) onDismiss() },
         containerColor = Color.White,
         shape = RoundedCornerShape(20.dp),
         title = {
@@ -1339,7 +1408,7 @@ fun RedesignedAddShopDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "GROW YOUR SHOP",
+                        text = "LIST NEW SHOP",
                         fontFamily = roboto,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp,
@@ -1369,95 +1438,163 @@ fun RedesignedAddShopDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Get your business listed on Savarkundla.in and connect directly with local city buyers.",
-                    fontFamily = roboto,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp,
-                    color = Color(0xFF334155),
-                    lineHeight = 18.sp
+                // Image Picker Box connected to Firebase Storage
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFF1F5F9))
+                        .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(10.dp))
+                        .clickable { photoPickerLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedImageUri != null) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Selected Shop Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Add", tint = Color(0xFF1E3A8A), modifier = Modifier.size(32.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Select Shop Photo (Storage)", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF1E3A8A))
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = shopName,
+                    onValueChange = { shopName = it },
+                    label = { Text("Shop Name", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                PartnerBenefitItem(
-                    title = "Verified Profile & Badge",
-                    desc = "Stand out with genuine customer reviews and animated shop categories.",
-                    roboto = roboto
+                OutlinedTextField(
+                    value = shopCategory,
+                    onValueChange = { shopCategory = it },
+                    label = { Text("Category (e.g. Electronics, Clothing)", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                PartnerBenefitItem(
-                    title = "Search & Voice Prominence",
-                    desc = "Appear on top when customers use 'Ask Anything' voice or keyword search.",
-                    roboto = roboto
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text("Short Address", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                PartnerBenefitItem(
-                    title = "Direct WhatsApp & Call Leads",
-                    desc = "Zero commissions. Customers call or chat with your shop directly.",
-                    roboto = roboto
+                OutlinedTextField(
+                    value = itemsSold,
+                    onValueChange = { itemsSold = it },
+                    label = { Text("Products Sold (e.g. Mobile, AC)", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text("Contact Phone", fontFamily = roboto) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (isUploading) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color(0xFF1E3A8A))
+                        Text("Uploading image to Firebase Storage...", fontFamily = roboto, fontSize = 12.sp, color = Color(0xFF1E3A8A))
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
+                enabled = !isUploading,
                 onClick = {
-                    val link = "https://api.whatsapp.com/send?phone=919876543210&text=Hello%20Savarkundla.in,%20I%20want%20to%20list%20my%20Shop%20under%20the%20₹2,000/month%20plan."
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-                    onDismiss()
+                    if (shopName.isBlank() || phone.isBlank()) {
+                        Toast.makeText(context, "Fill Shop Name and Phone", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    isUploading = true
+                    val firestore = FirebaseFirestore.getInstance()
+                    val storage = FirebaseStorage.getInstance()
+
+                    // Upload photo to Firebase Storage if selected, else default placeholder
+                    if (selectedImageUri != null) {
+                        val imageRef = storage.reference.child("Shops/${UUID.randomUUID()}.jpg")
+                        imageRef.putFile(selectedImageUri!!)
+                            .addOnSuccessListener {
+                                imageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                                    val newDoc = firestore.collection("Shops").document()
+                                    val shopData = hashMapOf(
+                                        "name" to shopName.trim(),
+                                        "shopType" to shopCategory.trim(),
+                                        "shortAddress" to address.trim(),
+                                        "itemsSold" to itemsSold.trim(),
+                                        "phone" to phone.trim(),
+                                        "imageUrl" to downloadUrl.toString(),
+                                        "rating" to 4.5,
+                                        "reviewCount" to 1,
+                                        "isActive" to true
+                                    )
+                                    newDoc.set(shopData).addOnCompleteListener {
+                                        isUploading = false
+                                        onDismiss()
+                                    }
+                                }
+                            }
+                            .addOnFailureListener {
+                                isUploading = false
+                                Toast.makeText(context, "Upload failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    } else {
+                        val newDoc = firestore.collection("Shops").document()
+                        val shopData = hashMapOf(
+                            "name" to shopName.trim(),
+                            "shopType" to shopCategory.trim(),
+                            "shortAddress" to address.trim(),
+                            "itemsSold" to itemsSold.trim(),
+                            "phone" to phone.trim(),
+                            "imageUrl" to "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800&q=80",
+                            "rating" to 4.5,
+                            "reviewCount" to 1,
+                            "isActive" to true
+                        )
+                        newDoc.set(shopData).addOnCompleteListener {
+                            isUploading = false
+                            onDismiss()
+                        }
+                    }
                 },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("JOIN PARTNER NETWORK", fontFamily = roboto, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                Text("SAVE SHOP TO FIREBASE", fontFamily = roboto, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("MAYBE LATER", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64748B))
+            TextButton(onClick = onDismiss, enabled = !isUploading, modifier = Modifier.fillMaxWidth()) {
+                Text("CANCEL", fontFamily = roboto, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64748B))
             }
         }
     )
 }
 
-// Why we use this: Reusable benefit item for the '+' modal.
-@Composable
-fun PartnerBenefitItem(
-    title: String,
-    desc: String,
-    roboto: FontFamily
-) {
-    Surface(
-        color = Color(0xFFF8FAFC),
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(0.6.dp, Color(0xFFCBD5E1))
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
-            Text(
-                text = "✓ $title",
-                fontFamily = roboto,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 13.sp,
-                color = Color(0xFF1E3A8A)
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = desc,
-                fontFamily = roboto,
-                fontWeight = FontWeight.Normal,
-                fontSize = 12.sp,
-                color = Color(0xFF475569),
-                lineHeight = 16.sp
-            )
-        }
-    }
-}
-
-// Why we use this: Redesigned Filter popup with crisp divider lines and heavy-weight Roboto text.
+// Why we use this
+// Filter Dialog.
 @Composable
 fun RedesignedFilterDialog(
     categories: List<String>,
@@ -1545,13 +1682,14 @@ fun RedesignedFilterDialog(
     )
 }
 
-// Why we use this: Form popup for posting a new job where GST Number is compulsory.
+// Why we use this
+// Saves newly created jobs directly into Firebase Firestore "Jobs" collection.
 @Composable
 fun CreateJobDialog(
     roboto: FontFamily,
-    onDismiss: () -> Unit,
-    onJobCreated: (JobPost) -> Unit
+    onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var roleTitle by remember { mutableStateOf("") }
     var shopName by remember { mutableStateOf("") }
     var salary by remember { mutableStateOf("") }
@@ -1563,10 +1701,11 @@ fun CreateJobDialog(
     var interviewerName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var gstNumber by remember { mutableStateOf("") }
+    var isPosting by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf("") }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isPosting) onDismiss() },
         containerColor = Color.White,
         shape = RoundedCornerShape(16.dp),
         title = {
@@ -1681,38 +1820,56 @@ fun CreateJobDialog(
         },
         confirmButton = {
             Button(
+                enabled = !isPosting,
                 onClick = {
                     when {
                         gstNumber.isBlank() -> errorMsg = "GST Number is compulsory to create a job!"
                         roleTitle.isBlank() || shopName.isBlank() || phone.isBlank() ->
                             errorMsg = "Please fill Job Role, Shop Name, and Mobile Number."
                         else -> {
-                            onJobCreated(
-                                JobPost(
-                                    id = System.currentTimeMillis().toString(),
-                                    roleTitle = roleTitle.trim(),
-                                    shopName = shopName.trim(),
-                                    salary = if (salary.isBlank()) "Negotiable" else salary.trim(),
-                                    education = if (education.isBlank()) "Open for All" else education.trim(),
-                                    experience = if (experience.isBlank()) "Freshers Welcome" else experience.trim(),
-                                    jobTime = if (jobTime.isBlank()) "Full Time" else jobTime.trim(),
-                                    fullAddress = if (address.isBlank()) "Savarkundla" else address.trim(),
-                                    aboutJob = if (aboutJob.isBlank()) "General store and counter duties." else aboutJob.trim(),
-                                    interviewerName = if (interviewerName.isBlank()) "Manager" else interviewerName.trim(),
-                                    interviewerNumber = phone.trim(),
-                                    gstNumber = gstNumber.trim()
-                                )
+                            isPosting = true
+                            val firestore = FirebaseFirestore.getInstance()
+                            val newDoc = firestore.collection("Jobs").document()
+
+                            val jobMap = hashMapOf(
+                                "roleTitle" to roleTitle.trim(),
+                                "shopName" to shopName.trim(),
+                                "salary" to if (salary.isBlank()) "Negotiable" else salary.trim(),
+                                "education" to if (education.isBlank()) "Open for All" else education.trim(),
+                                "experience" to if (experience.isBlank()) "Freshers Welcome" else experience.trim(),
+                                "jobTime" to if (jobTime.isBlank()) "Full Time" else jobTime.trim(),
+                                "fullAddress" to if (address.isBlank()) "Savarkundla" else address.trim(),
+                                "aboutJob" to if (aboutJob.isBlank()) "General store duties." else aboutJob.trim(),
+                                "interviewerName" to if (interviewerName.isBlank()) "Manager" else interviewerName.trim(),
+                                "interviewerNumber" to phone.trim(),
+                                "gstNumber" to gstNumber.trim(),
+                                "isActive" to true
                             )
+
+                            newDoc.set(jobMap)
+                                .addOnSuccessListener {
+                                    isPosting = false
+                                    Toast.makeText(context, "Job successfully posted!", Toast.LENGTH_SHORT).show()
+                                    onDismiss()
+                                }
+                                .addOnFailureListener {
+                                    isPosting = false
+                                    errorMsg = "Failed to post job: ${it.message}"
+                                }
                         }
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
             ) {
-                Text("Post Job", fontFamily = roboto, fontWeight = FontWeight.Bold)
+                if (isPosting) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                } else {
+                    Text("Post Job", fontFamily = roboto, fontWeight = FontWeight.Bold)
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isPosting) {
                 Text("Close", fontFamily = roboto, fontWeight = FontWeight.Bold)
             }
         }
